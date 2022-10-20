@@ -1,5 +1,5 @@
 ###triple robust for missing exposure (TRME) core function ######
-#' Title Triple Robust Estimation for Missing Exposure
+#' @title Triple Robust Estimation for Missing Exposure
 #' @author Yuliang Shi
 #' @description Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues via simplified estimating equations with triple robust (TR) properties. Provide robust standard errors for inference purposes.
 #'
@@ -39,7 +39,9 @@
 #'   form. For more details, please review the reference paper.
 #'
 #'   \code{method="ee"} is a complex estimating equation for TR estimator, which
-#'   may be influenced by extreme weights. Both two TR estimators have the same
+#'   may be influenced by extreme weights.
+#'
+#'   Both two TR estimators have the same
 #'   asymptotical consistency when the sample size is large. To achieve
 #'   consistency, both TR estimators require at least **one of two models**
 #'   condition, which means if the missingness model is correct, we require
@@ -145,20 +147,8 @@
 #' @importFrom matrixcalc is.singular.matrix
 #' @export trme
 
-
 trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("new","ee"))
 {
-
-  ##TRME core function starts
-  ##Goal: estimate the causal effect of exposure on the outcome when the exposure is MAR
-  ##covs: the vector of all confounders name which affect both exposure and outcome.
-  ##Y: the name of the outcome variable. Now, TRME only works on binary outcome.
-  ##A: the name of binary treatment or exposure variable.
-  ##df_mar: input dataset. Only exposure is MAR. If either covs or Y is also MAR, impute them first.
-  ##ps_model, imp_model: either \code{TRUE} or False. Depend on whether we use Bayes rule to estimate it.
-  ##quan_value: numerical shrinkage value. By default, we shrink to 99% quantile of weights.
-  ##method: either proposed "new" TR or "ee" TR estimators
-
 
   ##match the method
   method=match.arg(method)
@@ -867,13 +857,3 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 }
 
 
-#read data
-# real<-read.csv("SSC_Brazil_final_10_17.csv",header=TRUE,
-#                na.strings=c("","Not tested","Missing","Unknown","unknown","na","NA"))
-
-# names(real)[names(real)=="Y"]="outcome"
-# names(real)[names(real)=="A"]="treatment"
-# tr_est=trme(covs = c("age","sex","diabetes"),Y="outcome",A="treatment", df_mar=real,
-#             ps_model=T,or_model=T,imp_model=T,quan_value = 0.99)
-#
-# tr_est$results

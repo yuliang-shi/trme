@@ -2,7 +2,7 @@
 % Please edit documentation in R/trme.R
 \name{trme}
 \alias{trme}
-\title{Title Triple Robust Estimation for Missing Exposure}
+\title{Triple Robust Estimation for Missing Exposure}
 \usage{
 trme(
   covs,
@@ -76,7 +76,9 @@ The methods currently only work for the situation of missing
   form. For more details, please review the reference paper.
 
   \code{method="ee"} is a complex estimating equation for TR estimator, which
-  may be influenced by extreme weights. Both two TR estimators have the same
+  may be influenced by extreme weights.
+
+  Both two TR estimators have the same
   asymptotical consistency when the sample size is large. To achieve
   consistency, both TR estimators require at least **one of two models**
   condition, which means if the missingness model is correct, we require
