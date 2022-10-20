@@ -1,75 +1,151 @@
-
-
-###triple robust for missing exposure (TRME) core funciton ######
+###triple robust for missing exposure (TRME) core function ######
 #' Title Triple Robust Estimation for Missing Exposure
-#'
-#' Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues via simplified estimating equations with triple robust (TR) properties. Provide robust standard errors for inference purposes.
+#' @author Yuliang Shi
+#' @description Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues via simplified estimating equations with triple robust (TR) properties. Provide robust standard errors for inference purposes.
 #'
 #' @param covs \code{\link{character}}  the vector name of all confounders which
 #'   will affect both exposure and outcome.  Any interaction term or non-linear
-#'   form can be added after creating those variables based on the data. Factors
-#'   with two or multiple levels are allowed and will be converted as numerical
-#'   values.
+#'   form can be added after creating those variables based on the data.
+#'
 #' @param Y \code{\link{character}} the name of the outcome variable. The trme
 #'   function currently only works on the binary outcome.
 #' @param A \code{\link{character}} the name of binary treatment or exposure
 #'   variable.
 #' @param df_mar a data frame contains the variables in the models.
-#' @param ps_model a logical value either TRUE or FALSE. ps_model refers to the
-#'   treatment and imputation model, respectively. If the model=FALSE, the Bayes
+#' @param ps_model,imp_model a logical value either \code{TRUE} or \code{FALSE} ps_model, imp_model refers to the
+#'   treatment and imputation model, respectively. If the model=\code{FALSE}, the Bayes
 #'   rule will be applied to estimate it.
-#' @param imp_model a logical value either TRUE or FALSE. imp_model refers to
-#'   the treatment and imputation model, respectively. If the model=FALSE, the
-#'   Bayes rule will be applied to estimate it.
 #' @param quan_value \code{\link{numeric}} shrinkage value. By default, we
 #'   shrink weights larger than 99\% quantile into exact 99\% quantile to avoid
 #'   extreme weights.
 #' @param method the method to be used. either proposed "new" TR estimator or "ee" complex TR estimator.
 #'
-#' @return A list ...
-#' \itemize{
-#'     \item{Estimate}{estimated causal effect (log odds ratio) of exposure on the outcome. }
-#' \item{Robust.SE}{estimated robust standard errors used for inference.}
-#' \item{p.value}{p values for two-sided Wald test.}\item{95\% CI}{95\% two-sided confidence interval.In addition, some fitted values and plots are also provided including:}
-#' \item{vcov}{variance-covariance matrix among exposure and covariates.}
-#' \item{fit_ps_all}{predicted propensity score values for all subjects used to adjust for the confounding issue.}
-#' \item{fit_weightmiss}{fitted inverse weights of missingness used to adjust for the missing issue.}
-#' \item{hist_ps_control, hist_ps_trt}{histogram for predicted propensity score between control and treatment groups.}
-#' }
-#'
-#'
-#' @export trme
 #'
 #' @details The methods currently only work for the situation of missing
 #'   exposure and require binary outcome and exposure variables. If either the
 #'   covariates or outcome is also missing, first impute missing values based on
-#'   \code{\link{mice}}. The basic assumption is the exposure variable is
+#'   \code{\link{mice}}.
+#'
+#'   The basic assumption is the exposure variable is
 #'   missing at random (MAR), which means that given all observed covariates and
 #'   outcomes, the missingness (or missing indicator) is independent of the
 #'   missing value itself. If the exposure is missing not at random (MNAR), try
-#'   another method instead. \code{method="new"} is a simplified estimating
+#'   another method instead.
+#'
+#'   \code{method="new"} is a simplified estimating
 #'   equation for the triple robust (TR) estimator (recommended), which speeds
 #'   up the computation process and avoids some effects of extreme weights in
 #'   the finite samples, but still keeps the same TR properties as the complex
 #'   form. For more details, please review the reference paper.
+#'
 #'   \code{method="ee"} is a complex estimating equation for TR estimator, which
 #'   may be influenced by extreme weights. Both two TR estimators have the same
 #'   asymptotical consistency when the sample size is large. To achieve
-#'   consistency, both TR estimators require at least ``one of two models"
+#'   consistency, both TR estimators require at least **one of two models**
 #'   condition, which means if the missingness model is correct, we require
 #'   either the treatment or outcome model to be correct; If the missingness
 #'   model is wrong, but the outcome model is correct, we require either the
-#'   imputation or the treatment model to be correct. The asymptotical standard
+#'   imputation or the treatment model to be correct.
+#'
+#'   The asymptotical standard
 #'   errors may not be the same. However, both TR estimators utilize robust
 #'   standard error (RSE) based on the sandwich formula, which is quite robust
 #'   to the model's misspecification.
 #'
-#' @examples
-#' @references Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (11/2022).
+#' @return A list includes summarized results.
+#' \itemize{
+#' \item{\code{Estimate: }}{estimated causal effect (log odds ratio) of exposure on the outcome. }
+#' \item{\code{Robust.SE: }}{estimated robust standard errors used for inference.}
+#' \item{\code{p.value: }}{p values for two-sided Wald test.}
+#' \item{\code{95\% CI: }}{95\% two-sided confidence interval.}}
 #'
-#' @import rootSolve
-#' @import matrixcalc
-#' @seealso \code{\link{svyglm}} for inverse-probability weighting and double robust methods.
+#' In addition, other fitted values and plots are also provided including:
+#' \itemize{
+#' \item{\code{vcov: }}{variance-covariance matrix among exposure and covariates.}
+#' \item{\code{fit_ps_all: }}{predicted propensity score values for all subjects used to adjust for the confounding issue.}
+#' \item{\code{fit_weightmiss: }}{fitted inverse weights of missingness used to adjust for the missing issue.}
+#' \item{\code{hist_ps_control, hist_ps_trt}}{histogram for predicted propensity score between control and treatment groups.}
+#' }
+#'
+#' @note For more details, please review github website: [trme](https://github.com/yuliang-shi/trme).
+#' For citation, please cite the package as \dQuote{Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.}
+#' @seealso \code{\link{svyglm}} for inverse-probability weighting and double robust methods. \code{\link{mice}} for multiple imputation on missing data.
+#' @references Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (11/2022).
+#' @examples require(trme)
+#' set.seed(2000)
+#' n = 2000 #sample size
+#'
+#' #####generate some continuous covariates
+#' id = seq(1, n, by = 1)
+#' x1 = rnorm(n)
+#' x2 = rnorm(n)
+#' x3 = rnorm(n)
+#'
+#' #generate binary exposure from the PS model. x1,x2,x3 as confounders
+#' a = -0.5 + 0.3 * x1 + 0.6 * x2 + 0.6 * x3
+#' prob_a = 1 / (1 + exp(-a))
+#' A = rbinom(n, 1, prob_a)
+#'
+#' #generate binary outcome from OR model
+#' z = 0.9 + 1 *A + 0.1 * x1 + 0.3 * x2 + 0.2 * x3   #-1.5 is ok
+#' Y = rbinom(n, 1, 1 / (1 + exp(-z)))      #' bernoulli response variable
+#'
+#' ##df: before remove missing data
+#' df = data.frame(
+#'   id = id,
+#'   Y = Y,
+#'   A = factor(A),
+#'   x1 = x1,
+#'   x2 = x2,
+#'   x3 = x3,
+#'   prob_a = prob_a
+#' )
+#'
+#'
+#' ##control the miss rate as 60\%
+#' r_sim = 1.1 - 0.2 * x1 - 0.3 * x2 - 0.6 * x3 - 0.9 * Y #add random error
+#' r = rbinom(n, 1, 1 / (1 + exp(-r_sim))) #miss rate
+#'
+#' ##df_mar: after include missing data
+#' df_mar = cbind(df, "r" = r)
+#' df_mar$A[which(df_mar$r == 1)] = NA
+#'
+#' ##test in the simulated data
+#' ##use simplified method
+#' tr_est = trme(
+#'   covs = c("x1", "x2", "x3"),
+#'   Y = "Y",
+#'   A = "A",
+#'   df_mar = df_mar,
+#'   ps_model = T,
+#'   imp_model = T,
+#'   quan_value = 0.99,
+#'   method = "new"
+#' )
+#'
+#' tr_est$results
+#' tr_est$vcov
+#'
+#' ##use complex method
+#' tr_est = trme(
+#'   covs = c("x1", "x2", "x3"),
+#'   Y = "Y",
+#'   A = "A",
+#'   df_mar = df_mar,
+#'   ps_model = T,
+#'   imp_model = T,
+#'   quan_value = 0.99,
+#'   method = "ee"
+#' )
+#'
+#' tr_est$results
+#' tr_est$vcov
+#'
+#' @importFrom rootSolve multiroot
+#' @importFrom matrixcalc is.singular.matrix
+#' @export trme
+
+
 trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("new","ee"))
 {
 
@@ -79,7 +155,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
   ##Y: the name of the outcome variable. Now, TRME only works on binary outcome.
   ##A: the name of binary treatment or exposure variable.
   ##df_mar: input dataset. Only exposure is MAR. If either covs or Y is also MAR, impute them first.
-  ##ps_model, imp_model: either True or False. Depend on whether we use Bayes rule to estimate it.
+  ##ps_model, imp_model: either \code{TRUE} or False. Depend on whether we use Bayes rule to estimate it.
   ##quan_value: numerical shrinkage value. By default, we shrink to 99% quantile of weights.
   ##method: either proposed "new" TR or "ee" TR estimators
 
