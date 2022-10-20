@@ -69,6 +69,7 @@
 #'
 #' @import rootSolve
 #' @import matrixcalc
+#' @seealso \code{\link{svyglm}} for inverse-probability weighting and double robust methods.
 trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("new","ee"))
 {
 
