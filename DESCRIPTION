@@ -1,0 +1,13 @@
+Package: trme
+Type: Package
+Title: Package for Triple Robust Estimation for Missing Exposure.
+Version: 0.1.0
+Author: Yuliang Shi
+Maintainer: Yuliang Shi <yuliang.shi@uwaterloo.ca>
+Depends: R (>= 4.1.0)
+Imports: rootSolve, matrixcalc, stats
+Description: Estimate the causal effect of the exposure on the outcome when the exposure is MAR.    Adjust for both missing and confounding issues via simplified estimating equations with triple robust (TR) properties. Provide robsut standard errors for inference purpose.
+License: GPL (>= 3) | file LICENCE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.1
