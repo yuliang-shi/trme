@@ -1,4 +1,4 @@
-Package: trme
+Package: trmd
 Type: Package
 Title: Package for Triple Robust Estimation for Missing Exposure.
 Version: 0.1.0

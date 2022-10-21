@@ -16,4 +16,4 @@ devtools::install_github("yuliang-shi/trme" ,ref="main" ,auth_token = "ghp_yBFNd
 
 Note: the current version of the package only works for the case when the outcome and exposure variables are binary. In addition, the current package only supports the case when only the exposure variable is missing. If either the covariates or the outcome is also missing, we suggest imputing missing values based on the data. In the future, the package may be updated to deal with other cases such as the continuous outcome or the outcome is MAR.
 
-For more details, please cite the reference paper: *Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.*
+For more details, please cite the reference paper: *Yuliang Shi, Yeying Zhu, Joel Dubin. Causal Inference on Missing Exposure via Triple Robust Estimator. Statistics in Medicine.*
