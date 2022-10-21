@@ -39,20 +39,20 @@ extreme weights.}
 \item{method}{the method to be used. either proposed "new" TR estimator or "ee" complex TR estimator.}
 }
 \value{
-A list includes summarized results.
+Use \code{summary()} function to print out a data frame including summarized results.
 \itemize{
 \item{\code{Estimate: }}{estimated causal effect (log odds ratio) of exposure on the outcome. }
 \item{\code{Robust.SE: }}{estimated robust standard errors used for inference.}
 \item{\code{p.value: }}{p values for two-sided Wald test.}
 \item{\code{95\% CI: }}{95\% two-sided confidence interval.}}
 
-In addition, other fitted values and plots are also provided including:
+In addition, other fitted values are stored in the full list.
 \itemize{
 \item{\code{vcov: }}{variance-covariance matrix among exposure and covariates.}
 \item{\code{fit_ps_all: }}{predicted propensity score values for all subjects used to adjust for the confounding issue.}
-\item{\code{fit_weightmiss: }}{fitted inverse weights of missingness used to adjust for the missing issue.}
-\item{\code{hist_ps_control, hist_ps_trt}}{histogram for predicted propensity score between control and treatment groups.}
-}
+\item{\code{fit_weightmiss: }}{fitted inverse weights of missingness used to adjust for the missing issue.}}
+
+Plots are also provided by calling \code{plot()} function. \code{hist_ps_control, hist_ps_trt: } histogram for predicted propensity score between control and treatment groups.
 }
 \description{
 Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues via simplified estimating equations with triple robust (TR) properties. Provide robust standard errors for inference purposes.
@@ -60,7 +60,7 @@ Estimate the causal effect of the exposure on the outcome when the exposure is M
 \details{
 The methods currently only work for the situation of missing
   exposure and require binary outcome and exposure variables. If either the
-  covariates or outcome is also missing, first impute missing values based on
+  covariates or outcome is also missing, first, impute missing values based on
   \code{\link{mice}}.
 
   The basic assumption is the exposure variable is
@@ -92,7 +92,7 @@ The methods currently only work for the situation of missing
   to the model's misspecification.
 }
 \note{
-For more details, please review github website: [trme](https://github.com/yuliang-shi/trme).
+For more details, please review my GitHub website: https://github.com/yuliang-shi/trmd.
 For citation, please cite the package as \dQuote{Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.}
 }
 \examples{
@@ -147,8 +147,9 @@ tr_est = trme(
   method = "new"
 )
 
-tr_est$results
-tr_est$vcov
+##print out results and plots
+summary(tr_est)
+plot(tr_est)
 
 ##use complex method
 tr_est = trme(
@@ -162,12 +163,14 @@ tr_est = trme(
   method = "ee"
 )
 
-tr_est$results
-tr_est$vcov
+##print out results and plots
+summary(tr_est)
+plot(tr_est)
 
 }
 \references{
 Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (11/2022).
+Zhang, Z., Liu, W., Zhang, B., Tang, L., and Zhang, J. (2016). \emph{Causal inference with missing exposure information: Methods and applications to an obstetric study}. Statistical Methods in Medical Research 25, 2053–2066.
 }
 \seealso{
 \code{\link{svyglm}} for inverse-probability weighting and double robust methods. \code{\link{mice}} for multiple imputation on missing data.
@@ -175,3 +178,5 @@ Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure 
 \author{
 Yuliang Shi
 }
+\keyword{regression,}
+\keyword{robust.}

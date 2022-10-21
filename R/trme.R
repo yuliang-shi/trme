@@ -3,6 +3,7 @@
 #' @author Yuliang Shi
 #' @description Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues via simplified estimating equations with triple robust (TR) properties. Provide robust standard errors for inference purposes.
 #'
+#'
 #' @param covs \code{\link{character}}  the vector name of all confounders which
 #'   will affect both exposure and outcome.  Any interaction term or non-linear
 #'   form can be added after creating those variables based on the data.
@@ -22,7 +23,7 @@
 #'
 #' @details The methods currently only work for the situation of missing
 #'   exposure and require binary outcome and exposure variables. If either the
-#'   covariates or outcome is also missing, first impute missing values based on
+#'   covariates or outcome is also missing, first, impute missing values based on
 #'   \code{\link{mice}}.
 #'
 #'   The basic assumption is the exposure variable is
@@ -53,25 +54,33 @@
 #'   standard error (RSE) based on the sandwich formula, which is quite robust
 #'   to the model's misspecification.
 #'
-#' @return A list includes summarized results.
+#' @return Use \code{summary()} function to print out a data frame including summarized results.
 #' \itemize{
 #' \item{\code{Estimate: }}{estimated causal effect (log odds ratio) of exposure on the outcome. }
 #' \item{\code{Robust.SE: }}{estimated robust standard errors used for inference.}
 #' \item{\code{p.value: }}{p values for two-sided Wald test.}
 #' \item{\code{95\% CI: }}{95\% two-sided confidence interval.}}
 #'
-#' In addition, other fitted values and plots are also provided including:
+#' In addition, other fitted values are stored in the full list.
 #' \itemize{
 #' \item{\code{vcov: }}{variance-covariance matrix among exposure and covariates.}
 #' \item{\code{fit_ps_all: }}{predicted propensity score values for all subjects used to adjust for the confounding issue.}
-#' \item{\code{fit_weightmiss: }}{fitted inverse weights of missingness used to adjust for the missing issue.}
-#' \item{\code{hist_ps_control, hist_ps_trt}}{histogram for predicted propensity score between control and treatment groups.}
-#' }
+#' \item{\code{fit_weightmiss: }}{fitted inverse weights of missingness used to adjust for the missing issue.}}
 #'
-#' @note For more details, please review github website: [trme](https://github.com/yuliang-shi/trme).
+#' Plots are also provided by calling \code{plot()} function. \code{hist_ps_control, hist_ps_trt: } histogram for predicted propensity score between control and treatment groups.
+#'
+#'
+#' @keywords regression, robust.
+#'
+#' @note For more details, please review my GitHub website: https://github.com/yuliang-shi/trmd.
 #' For citation, please cite the package as \dQuote{Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.}
+#'
 #' @seealso \code{\link{svyglm}} for inverse-probability weighting and double robust methods. \code{\link{mice}} for multiple imputation on missing data.
+#'
 #' @references Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (11/2022).
+#' Zhang, Z., Liu, W., Zhang, B., Tang, L., and Zhang, J. (2016). \emph{Causal inference with missing exposure information: Methods and applications to an obstetric study}. Statistical Methods in Medical Research 25, 2053–2066.
+#'
+#'
 #' @examples
 #' set.seed(2000)
 #' n = 2000 #sample size
@@ -124,8 +133,9 @@
 #'   method = "new"
 #' )
 #'
-#' tr_est$results
-#' tr_est$vcov
+#' ##print out results and plots
+#' summary(tr_est)
+#' plot(tr_est)
 #'
 #' ##use complex method
 #' tr_est = trme(
@@ -139,12 +149,14 @@
 #'   method = "ee"
 #' )
 #'
-#' tr_est$results
-#' tr_est$vcov
+#' ##print out results and plots
+#' summary(tr_est)
+#' plot(tr_est)
 #'
 #' @importFrom rootSolve multiroot
 #' @importFrom matrixcalc is.singular.matrix
 #' @export trme
+
 
 trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("new","ee"))
 {
@@ -213,7 +225,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
   glm_mar
 
 
-  ##inverse weights of missingess
+  ##inverse weights of missingessness
   df_mar$weight_miss=1/(1-glm_mar$fitted.values)
 
   #shrinkage to 99%
@@ -272,7 +284,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
     df_mar$pred_ps_xy_y1=(link_glm_or_trt*link_glm_ps)/(link_glm_or_trt*link_glm_ps+link_glm_or_con*(1-link_glm_ps))
     df_mar$pred_ps_xy_y0=((1-link_glm_or_trt)*link_glm_ps)/(1-(link_glm_or_trt*link_glm_ps+link_glm_or_con*(1-link_glm_ps)))
 
-    ##match the fitted value with correct position with observed y=1 or y=0
+    ##match the fitted value with the correct position with observed y=1 or y=0
     df_mar$pred_ps_xy[df_mar$Y==1]=df_mar$pred_ps_xy_y1[df_mar$Y==1]
     df_mar$pred_ps_xy[df_mar$Y==0]=df_mar$pred_ps_xy_y0[df_mar$Y==0]
 
@@ -285,7 +297,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 
 
   ##X matrix as input variable values
-  ##without treat
+  ##without the treatment
   X_all=as.matrix(df_mar[,c("x0",covs)])
   X_obs=as.matrix(df_mar_naomit[,c("x0",covs)]) #design matrix nxp
 
@@ -293,7 +305,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
   XA_all=as.matrix(df_mar[,c("x0","A",covs)])
   XA_obs=as.matrix(df_mar_naomit[,c("x0","A",covs)])
 
-  #input matrix for subset on trt and control
+  #input matrix for the subset on trt and control
   XA_con_all=XA_all
   XA_con_all[,"A"]=0
   XA_trt_all=XA_all
@@ -333,7 +345,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 
     ##loop all columns for all covs and observed covs
     ##return F diff=F_obs-F_all to multiroot
-    ##Then try the possible values s.t F diff is small enough to 0 and not changes much
+    ##Then try the possible values s.t F diff is small enough to 0 and not change much
     for (j in 1:ncol(X_all)) {
 
       F_diff[j]=score_alphaj(x_obs=X_obs[,j],x_all=X_all[,j])
@@ -392,17 +404,17 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 
     ##loop all columns for all covs and observed covs
     ##return F diff=F_obs-F_all to multiroot
-    ##Then try the possible values s.t F diff is small enough to 0 and not changes much
+    ##Then try the possible values s.t F diff is small enough to 0 and not change much
     for (j in 1:ncol(X_all)) {
 
       F_diff[j]=score_ij(x_obs=X_obs[,j],x_all=X_all[,j],type = "cov")
 
     }
 
-    ##specially, solve equation for exposure
+    ## especially, solve the equation for exposure
     F_trt=score_ij(x_obs=df_mar_naomit$A,x_all=1,type="expose")
 
-    ##combine results with baseline, expousure, and covariates
+    ##combine results with baseline, exposure, and covariates
     return(c(F_diff[1], F_trt, F_diff[-1]))
   }
 
@@ -425,11 +437,11 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
     fit_ps_dr_all=exp(link_dr_alpha_all)/(1+exp(link_dr_alpha_all))
 
   }else{
-    ##similarly, as long as users use ps_mdoel=F, we will apply Bayes rule to transfer A|X
-    ##However, it need both OR and Imp models are correct to use Bayes rule.
-    ##if PS model is wrong, both OR and Imp models are also wrong, using Bayes rule doesn't help. Always biased estimate.
+    ##Similarly, as long as users use ps_mdoel=F, we will apply the Bayes rule to transfer A|X
+    ##However, it needs both OR and Imp models are correct to use Bayes rule.
+    ##if PS model is wrong, both OR and Imp models are also wrong, using the Bayes rule doesn't help. Always a biased estimate.
 
-    ##fit two imp models on different subset
+    ##fit two imp models on a different subset
 
     glm_ps_xy_trt=glm(as.formula(paste("A~",paste(covs,collapse = "+"))),data=subset(df_mar,Y==1),family = binomial)
     glm_ps_xy_con=glm(as.formula(paste("A~",paste(covs,collapse = "+"))),data=subset(df_mar,Y==0),family = binomial)
@@ -443,7 +455,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
     pred_beta_ee_trt=exp(XA_con_all%*%beta_ee_miss)/(1+exp(XA_con_all%*%beta_ee_miss))
     pred_beta_ee_con=exp(XA_con_all%*%beta_ee_miss)/(1+exp(XA_con_all%*%beta_ee_miss))
 
-    ##Bayes predict ps from correct or and imp models
+    ##Bayes predict ps from correct or imp models
     ##need stronger assumption that P(Y=1|A=0,X) P(Y=1|A=1,X) has same format
     fit_ps_dr_all=-(pred_glm_ps_xy_trt*pred_beta_ee_con)/(pred_glm_ps_xy_trt*pred_beta_ee_trt-pred_glm_ps_xy_trt*pred_beta_ee_con-pred_beta_ee_trt)
     fit_ps_dr=fit_ps_dr_all[df_mar$r==0]
@@ -526,17 +538,17 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 
       ##loop all columns for all covs and observed covs
       ##return F diff=F_obs-F_all to multiroot
-      ##Then try the possible values s.t F diff is small enough to 0 and not changes much
+      ##Then try the possible values s.t F diff is small enough to 0 and not change much
       for (j in 1:ncol(X_all)) {
 
         F_diff[j]=score_tr_new(x_obs=X_obs[,j],x_all=X_all[,j],type = "cov")
 
       }
 
-      ##specially, solve equation for exposure
+      ## especially, solve equations for exposure
       F_trt=score_tr_new(x_obs=df_mar_naomit$A,x_all=1,type="expose")
 
-      ##combine results with baseline, expousure, and covariates
+      ##combine results with baseline, exposure, and covariates
       return(c(F_diff[1], F_trt, F_diff[-1]))
 
     }
@@ -565,7 +577,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
       link_fit=XA_obs%*%beta_ee_miss
       y_fit_dr=exp(link_fit)/(1+exp(link_fit))
 
-      #fit in control group
+      #fit in the control group
       link_fit_allcon=XA_con_all%*%beta_ee_miss
 
       #fit in treat group
@@ -609,17 +621,17 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 
       ##loop all columns for all covs and observed covs
       ##return F diff=F_obs-F_all to multiroot
-      ##Then try the possible values s.t F diff is small enough to 0 and not changes much
+      ##Then try the possible values s.t F diff is small enough to 0 and not change much
       for (j in 1:ncol(X_all)) {
 
         F_diff[j]=score_j(x_obs=X_obs[,j],x_all=X_all[,j],type = "cov")
 
       }
 
-      ##specially, solve equation for exposure
+      ## especially, solve equation for exposure
       F_trt=score_j(x_obs=df_mar_naomit$A,x_all=1,type="expose")
 
-      ##combine results with baseline, expousure, and covariates
+      ##combine results with baseline, exposure, and covariates
       return(c(F_diff[1], F_trt, F_diff[-1]))
 
     }
@@ -673,7 +685,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 
 
 
-    ##bread matrix pxp only include observed data,
+    ##bread matrix pxp only includes observed data,
     for (j in 1:l) {
       for (k in 1:l) {
         I[j,k]=sum((1-df_mar_naomit$r)*df_mar_naomit$weight_miss*ipw_dr*XA_obs[,j]*XA_obs[,k]*exp(link_fit)/(1+exp(link_fit))^2)
@@ -684,7 +696,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
     ######Score fun for TR EE New#########
     ##Note: remove all sum for F obs and F all. We just need nxp fitted score
     ##in TSE, link should replace by link_fit
-    ##all link_fit is jsut linear combination of x*beta without exp. so add exp()
+    ##all link_fit is just a linear combination of x*beta without exp. so add exp()
     ##F obs only has observed data. others are 0.
     #fitted score equation x_j
     if(method=="new")
@@ -763,17 +775,17 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 
     ##loop all columns for all covs and observed covs
     ##return F diff=F_obs-F_all to multiroot
-    ##Then try the possible values s.t F diff is small enough to 0 and not changes much
+    ##Then try the possible values s.t F diff is small enough to 0 and not change much
     for (j in 1:ncol(X_all)) {
 
       F_diff_mat[,j]=score_j(x_obs=X_obs[,j],x_all=X_all[,j],type = "cov")
 
     }
 
-    ##specially, solve equation for exposure
+    ## especially, solve equations for exposure
     F_trt=score_j(x_obs=df_mar_naomit$A,x_all=1,type="expose")
 
-    ##combine results with baseline, expousure, and covariates
+    ##combine results with baseline, exposure, and covariates
     #observed score nx(p+2)
     S_mat=cbind(F_diff_mat[,1],F_trt,F_diff_mat[,-1])
 
@@ -842,7 +854,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
   df_sum=cbind(df_sum,"95% CI"=tr_ci)
 
 
-  ###return list with summary table, covariance matrix, fitted ps values, fitted miss weights
+  ###return list with a summary table, covariance matrix, fitted ps values, fitted miss weights
   final=list("results"=df_sum,"vcov"=var_beta_tr$cov_beta,
              "fit_ps_all"=fit_ps_dr_all,"fit_weightmiss"=df_mar$weight_miss,
              "df_mar"=df_mar)
