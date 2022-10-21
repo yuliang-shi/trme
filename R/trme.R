@@ -6,7 +6,6 @@
 #' @param covs \code{\link{character}}  the vector name of all confounders which
 #'   will affect both exposure and outcome.  Any interaction term or non-linear
 #'   form can be added after creating those variables based on the data.
-#'
 #' @param Y \code{\link{character}} the name of the outcome variable. The trme
 #'   function currently only works on the binary outcome.
 #' @param A \code{\link{character}} the name of binary treatment or exposure
@@ -73,7 +72,7 @@
 #' For citation, please cite the package as \dQuote{Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.}
 #' @seealso \code{\link{svyglm}} for inverse-probability weighting and double robust methods. \code{\link{mice}} for multiple imputation on missing data.
 #' @references Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (11/2022).
-#' @examples require(trme)
+#' @examples
 #' set.seed(2000)
 #' n = 2000 #sample size
 #'
@@ -100,7 +99,7 @@
 #'   x1 = x1,
 #'   x2 = x2,
 #'   x3 = x3,
-#'   prob_a = prob_a
+#' prob_a = prob_a
 #' )
 #'
 #'
@@ -846,13 +845,11 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
   ###return list with summary table, covariance matrix, fitted ps values, fitted miss weights
   final=list("results"=df_sum,"vcov"=var_beta_tr$cov_beta,
              "fit_ps_all"=fit_ps_dr_all,"fit_weightmiss"=df_mar$weight_miss,
-             "hist_ps_control"=hist(fit_ps_dr_all[df_mar_naomit$A==0],main="Fitted PS Values in Control",
-                                    xlab="control group",ylab="density",freq=F),
-             "hist_ps_trt"=hist(fit_ps_dr_all[df_mar_naomit$A==1],main="Fitted PS Values in Treatment",
-                                xlab="treatment group",ylab="density",freq=F)
-  )
+             "df_mar"=df_mar)
 
-  return(final)
+  ##return
+  structure(final, class = "trmd") # S3 class
+  # return(final)
 
 }
 

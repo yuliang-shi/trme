@@ -96,7 +96,6 @@ For more details, please review github website: [trme](https://github.com/yulian
 For citation, please cite the package as \dQuote{Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.}
 }
 \examples{
-require(trme)
 set.seed(2000)
 n = 2000 #sample size
 
@@ -123,7 +122,7 @@ df = data.frame(
   x1 = x1,
   x2 = x2,
   x3 = x3,
-  prob_a = prob_a
+prob_a = prob_a
 )
 
 
