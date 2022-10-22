@@ -170,10 +170,12 @@ plot(tr_est)
 }
 \references{
 Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (11/2022).
+
 Zhang, Z., Liu, W., Zhang, B., Tang, L., and Zhang, J. (2016). \emph{Causal inference with missing exposure information: Methods and applications to an obstetric study}. Statistical Methods in Medical Research 25, 2053–2066.
 }
 \seealso{
-\code{\link{svyglm}} for inverse-probability weighting and double robust methods. \code{\link{mice}} for multiple imputation on missing data.
+\code{\link{summary.trmd}} for summarized result and \code{\link{plot.trmd}} for drawing histograms of fitted propensity score.
+Other useful functions include \code{\link{svyglm}} for inverse-probability weighting or double robust methods and \code{\link{mice}} for multiple imputation on missing data.
 }
 \author{
 Yuliang Shi
