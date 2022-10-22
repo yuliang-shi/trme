@@ -157,7 +157,7 @@
 #'
 #' @importFrom rootSolve multiroot
 #' @importFrom matrixcalc is.singular.matrix
-#' @export trme
+#' @export
 
 
 trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("new","ee"))

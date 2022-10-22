@@ -1,5 +1,5 @@
 # trmd: Triple Robust Estimation for Missing Data
-**Goal: Estimate the causal effect of the exposure on the outcome when the exposure is missing at random (MAR). **
+**Goal: Estimate the causal effect of the exposure on the outcome when the exposure is missing at random (MAR).**
 
 Method: we develop simplified triple robust (TR) estimator to adjust for both missing and confounding issues in the observational studies. The new estimator contains TR robust properties, i.e. it can achieve consistency if the ``**one of two models**" condition satisfies, which means *if the missingness model is correct, we require either the treatment or outcome model to be correct; or if the missingness model is wrong, but the outcome model is correct, we require either the imputation or the treatment model to be correct.*
 
@@ -17,9 +17,9 @@ devtools::install_github("yuliang-shi/trmd" ,ref="main" ,auth_token = "ghp_yBFNd
 
 Within the "trmd" package, the main function is **"trme" only working for missing exposure**. After installation, to understand how to use the "trme" main function, please run the following codes. **We strongly suggest users to read the detailed instruction and try the example codes carefully.**
 ```
+##attach the package and read the instructions of trme function
 library("trmd")
 help(trme) 
-
 ```
 If the ``devtools" does not work, 1) check and update your R version, 2) check your path, and 3) restart your computer or R. If it still doesn’t work, try the following commands:
 ```
