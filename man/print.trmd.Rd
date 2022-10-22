@@ -7,10 +7,10 @@
 \method{print}{trmd}(object)
 }
 \arguments{
-\item{object}{Objects of Class 'trmd'}
+\item{object}{Objects of Class 'trmd'.}
 }
 \value{
-invisible() with printing
+print the summarized results.
 }
 \description{
 print() Method for Objects of Class 'trmd'

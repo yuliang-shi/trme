@@ -1,6 +1,6 @@
-#' @title summary() Method for Objects of Class 'trmd'
+#' @title Summary() Method for Objects of Class 'trmd'
 #' @param object Objects of Class 'trmd'
-#' @return a list containing estimates of parameters.
+#' @return a data frame containing summarized estimates of parameters.
 #' @export
 #'
 summary.trmd <- function(object){
@@ -12,8 +12,8 @@ summary.trmd <- function(object){
 
 
 #' @title print() Method for Objects of Class 'trmd'
-#' @param object Objects of Class 'trmd'
-#' @return invisible() with printing
+#' @param object Objects of Class 'trmd'.
+#' @return print the summarized results.
 #' @export
 print.trmd <- function(object){
 

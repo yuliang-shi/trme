@@ -2,7 +2,7 @@
 % Please edit documentation in R/summary.R
 \name{summary.trmd}
 \alias{summary.trmd}
-\title{summary() Method for Objects of Class 'trmd'}
+\title{Summary() Method for Objects of Class 'trmd'}
 \usage{
 \method{summary}{trmd}(object)
 }
@@ -10,8 +10,8 @@
 \item{object}{Objects of Class 'trmd'}
 }
 \value{
-a list containing estimates of parameters.
+a data frame containing summarized estimates of parameters.
 }
 \description{
-summary() Method for Objects of Class 'trmd'
+Summary() Method for Objects of Class 'trmd'
 }
