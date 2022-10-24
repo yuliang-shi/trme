@@ -11,7 +11,6 @@ Advantages: compared with previous TR estimator from the complex estimating equa
 **Use: to install the ``trmd" package from the GitHub, you need to run the following commands in R or Rstudio:**
 ```
 install.packages("devtools")
-library("devtools")
 devtools::install_github("yuliang-shi/trmd" ,ref="main" ,auth_token = "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")
 ```
 

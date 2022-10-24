@@ -166,6 +166,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
   ##match the method
   method=match.arg(method)
 
+  ###start the main functions
   ##rename variables in df_mar
   names(df_mar)[names(df_mar)==Y]="Y"
   names(df_mar)[names(df_mar)==A]="A"
@@ -454,7 +455,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 
 
     ##use beta ee miss to predict for all subjects
-    pred_beta_ee_trt=exp(XA_con_all%*%beta_ee_miss)/(1+exp(XA_con_all%*%beta_ee_miss))
+    pred_beta_ee_trt=exp(XA_trt_all%*%beta_ee_miss)/(1+exp(XA_trt_all%*%beta_ee_miss))
     pred_beta_ee_con=exp(XA_con_all%*%beta_ee_miss)/(1+exp(XA_con_all%*%beta_ee_miss))
 
     ##Bayes predict ps from correct or imp models
@@ -505,7 +506,7 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
       #linear fit
       # link_fit=exp(glm_or$linear.predictors)
 
-      #dimenesion problem must use observed values to input the data
+      #dimension problem must use observed values to input the data
       link=XA_obs%*%beta
 
       link_con=XA_con_all%*%beta_ee_miss
@@ -818,10 +819,11 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
       colnames(cov_beta)=c("x0","A",covs)
 
 
-      #covariance  matrix
+      ##covariance  matrix
       se_beta_tr=sqrt(diag(cov_beta))
-      p_tr=2*(1-pnorm(q=beta_tr/se_beta_tr,mean=0,sd=1))
 
+      ##p value. must use absolute value
+      p_tr=2*(1-pnorm(q=abs(beta_tr/se_beta_tr),mean=0,sd=1))
     }
 
     ##output
@@ -846,25 +848,33 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
   ######final output######
   df_sum=data.frame("Estimate"=beta_tr,"Robust SE"=var_beta_tr$se_beta_tr,
                     "p value"=var_beta_tr$p_tr)
-  df_sum=round(df_sum,3)
   row.names(df_sum)=c("(Intercept)",A,covs)
+
+
+  ##first round to 3 digit
+  ##format without dropping 0. check whether smaller than 0.001
+  df_sum=round(df_sum,3)
+  df_sum$p.value=format(df_sum$p.value,drop0Trailing = F)
+  df_sum$p.value[which(df_sum$p.value<0.001)]="<0.001"
+
 
   ##95% CI
   tr_ci_low=round(df_sum$Estimate-1.96*df_sum$Robust.SE,3)
   tr_ci_up=round(df_sum$Estimate+1.96*df_sum$Robust.SE,3)
-  tr_ci=paste0("(",tr_ci_low,",",tr_ci_up,")")
+  tr_ci=paste0("(",format(tr_ci_low,drop0Trailing = F),",",format(tr_ci_up,drop0Trailing = F),")")
   df_sum=cbind(df_sum,"95% CI"=tr_ci)
 
+  ##switch column order
+  df_sum=subset(df_sum,select = c("Estimate","Robust.SE","95% CI","p.value"))
 
   ###return list with a summary table, covariance matrix, fitted ps values, fitted miss weights
   final=list("results"=df_sum,"vcov"=var_beta_tr$cov_beta,
              "fit_ps_all"=fit_ps_dr_all,"fit_weightmiss"=df_mar$weight_miss,
              "df_mar"=df_mar)
 
+
   ##return
   structure(final, class = "trmd") # S3 class
-  # return(final)
-
 }
 
 
