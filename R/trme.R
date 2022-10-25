@@ -12,8 +12,7 @@
 #' @param A \code{\link{character}} the name of binary treatment or exposure
 #'   variable.
 #' @param df_mar a data frame contains the variables in the models.
-#' @param ps_model,imp_model a logical value either \code{TRUE} or \code{FALSE} ps_model, imp_model refers to the
-#'   treatment and imputation model, respectively. If the model=\code{FALSE}, the Bayes
+#' @param imp_model a logical value either \code{TRUE} or \code{FALSE} for correct or wrong imputation model. If the model=\code{FALSE}, the Bayes
 #'   rule will be applied to estimate it.
 #' @param quan_value \code{\link{numeric}} shrinkage value. By default, we
 #'   shrink weights larger than 99\% quantile into exact 99\% quantile to avoid
@@ -129,7 +128,6 @@
 #'   Y = "Y",
 #'   A = "A",
 #'   df_mar = df_mar,
-#'   ps_model = T,
 #'   imp_model = T,
 #'   quan_value = 0.99,
 #'   method = "new"
@@ -145,7 +143,6 @@
 #'   Y = "Y",
 #'   A = "A",
 #'   df_mar = df_mar,
-#'   ps_model = T,
 #'   imp_model = T,
 #'   quan_value = 0.99,
 #'   method = "ee"
@@ -160,7 +157,7 @@
 #' @export
 
 
-trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("new","ee"))
+trme=function(covs,Y,A,df_mar,imp_model=T,quan_value=0.99,method=c("new","ee"))
 {
 
   ##match the method
@@ -430,40 +427,13 @@ trme=function(covs,Y,A,df_mar,ps_model=T,imp_model=T,quan_value=0.99,method=c("n
 
 
   ###fitted values for PS
-  if(ps_model==T){
-
-    ###if PS mdoel is correct.
+  ###if PS model is correct. we can use original PS model to get fitted PS
+  ##if PS model is wrong, it is biased. So we require Miss+OR or OR+imp is correct.
     linear_dr_alpha=X_obs%*%alpha_ee
     fit_ps_dr=exp(linear_dr_alpha)/(1+exp(linear_dr_alpha))
 
     link_dr_alpha_all=X_all%*%alpha_ee
     fit_ps_dr_all=exp(link_dr_alpha_all)/(1+exp(link_dr_alpha_all))
-
-  }else{
-    ##Similarly, as long as users use ps_mdoel=F, we will apply the Bayes rule to transfer A|X
-    ##However, it needs both OR and Imp models are correct to use Bayes rule.
-    ##if PS model is wrong, both OR and Imp models are also wrong, using the Bayes rule doesn't help. Always a biased estimate.
-
-    ##fit two imp models on a different subset
-
-    glm_ps_xy_trt=glm(as.formula(paste("A~",paste(covs,collapse = "+"))),data=subset(df_mar,Y==1),family = binomial)
-    glm_ps_xy_con=glm(as.formula(paste("A~",paste(covs,collapse = "+"))),data=subset(df_mar,Y==0),family = binomial)
-
-    ##predict for all subjects due to MAR
-    pred_glm_ps_xy_trt=predict(glm_ps_xy_trt,newdata=df_mar,type="response")
-    pred_glm_ps_xy_con=predict(glm_ps_xy_con,newdata=df_mar,type="response")
-
-
-    ##use beta ee miss to predict for all subjects
-    pred_beta_ee_trt=exp(XA_trt_all%*%beta_ee_miss)/(1+exp(XA_trt_all%*%beta_ee_miss))
-    pred_beta_ee_con=exp(XA_con_all%*%beta_ee_miss)/(1+exp(XA_con_all%*%beta_ee_miss))
-
-    ##Bayes predict ps from correct or imp models
-    ##need stronger assumption that P(Y=1|A=0,X) P(Y=1|A=1,X) has same format
-    fit_ps_dr_all=-(pred_glm_ps_xy_trt*pred_beta_ee_con)/(pred_glm_ps_xy_trt*pred_beta_ee_trt-pred_glm_ps_xy_trt*pred_beta_ee_con-pred_beta_ee_trt)
-    fit_ps_dr=fit_ps_dr_all[df_mar$r==0]
-
-  }
 
 
   #inverse weights of ps_dr values and shrink

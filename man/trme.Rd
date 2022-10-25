@@ -9,7 +9,6 @@ trme(
   Y,
   A,
   df_mar,
-  ps_model = T,
   imp_model = T,
   quan_value = 0.99,
   method = c("new", "ee")
@@ -28,8 +27,7 @@ variable.}
 
 \item{df_mar}{a data frame contains the variables in the models.}
 
-\item{ps_model, imp_model}{a logical value either \code{TRUE} or \code{FALSE} ps_model, imp_model refers to the
-treatment and imputation model, respectively. If the model=\code{FALSE}, the Bayes
+\item{imp_model}{a logical value either \code{TRUE} or \code{FALSE} for correct or wrong imputation model. If the model=\code{FALSE}, the Bayes
 rule will be applied to estimate it.}
 
 \item{quan_value}{\code{\link{numeric}} shrinkage value. By default, we
@@ -141,7 +139,6 @@ tr_est = trme(
   Y = "Y",
   A = "A",
   df_mar = df_mar,
-  ps_model = T,
   imp_model = T,
   quan_value = 0.99,
   method = "new"
@@ -157,7 +154,6 @@ tr_est = trme(
   Y = "Y",
   A = "A",
   df_mar = df_mar,
-  ps_model = T,
   imp_model = T,
   quan_value = 0.99,
   method = "ee"
