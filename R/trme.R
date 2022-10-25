@@ -11,22 +11,21 @@
 #'   function currently only works on the binary outcome.
 #' @param A \code{\link{character}} the name of binary treatment or exposure
 #'   variable.
-#' @param df_mar a data frame contains the variables in the models.
-#' @param imp_model a logical value either \code{TRUE} or \code{FALSE} for correct or wrong imputation model. If the model=\code{FALSE}, the Bayes
-#'   rule will be applied to estimate it.
+#' @param df_mar a \code{\link{data.frame}} contains the variables in the models.
+#' @param imp_model a \code{\link{logical}} value either \code{TRUE} or \code{FALSE} for correct or wrong imputation model. If the model=\code{FALSE}, the Bayes rule will be applied to estimate it.
 #' @param quan_value \code{\link{numeric}} shrinkage value. By default, we
 #'   shrink weights larger than 99\% quantile into exact 99\% quantile to avoid
 #'   extreme weights.
-#' @param method the method to be used. either proposed "new" TR estimator or "ee" complex TR estimator.
+#' @param method \code{\link{character}} the method to be used. either "new" for simplified TR estimator or "ee" for complex TR estimator.
 #'
 #'
-#' @details The methods currently only work for the situation of missing
-#'   exposure and require binary outcome and exposure variables. If either the
-#'   covariates or outcome is also missing, first, impute missing values based on
+#' @details The methods currently only work for the missing
+#'   exposure with binary outcome and exposure variables. If either the
+#'   covariates or outcome is also missing, please impute missing values via
 #'   \code{\link{mice}}.
 #'
-#'   The basic assumption is the exposure variable is
-#'   missing at random (MAR), which means that given all observed covariates and
+#'   The basic assumption is that the exposure variable is
+#'   missing at random (MAR), i.e. given all observed covariates and
 #'   outcomes, the missingness (or missing indicator) is independent of the
 #'   missing value itself. If the exposure is missing not at random (MNAR), try
 #'   another method instead.
@@ -34,48 +33,45 @@
 #'   \code{method="new"} is a simplified estimating
 #'   equation for the triple robust (TR) estimator (recommended), which speeds
 #'   up the computation process and avoids some effects of extreme weights in
-#'   the finite samples, but still keeps the same TR properties as the complex
+#'   the finite samples, but it still keeps the same TR properties as the complex
 #'   form. For more details, please review the reference paper.
 #'
-#'   \code{method="ee"} is a complex estimating equation for TR estimator, which
-#'   may be influenced by extreme weights.
+#'   \code{method="ee"} is a complex estimating equation for TR estimator, which contains more steps and may be influenced by extreme weights.
 #'
 #'   Both two TR estimators have the same
-#'   asymptotical consistency when the sample size is large. To achieve
+#'   asymptotic consistency when the sample size is large. To achieve
 #'   consistency, both TR estimators require at least **one of two models**
 #'   condition, which means if the missingness model is correct, we require
 #'   either the treatment or outcome model to be correct; If the missingness
 #'   model is wrong, but the outcome model is correct, we require either the
 #'   imputation or the treatment model to be correct.
 #'
-#'   The asymptotical standard
-#'   errors may not be the same. However, both TR estimators utilize robust
-#'   standard error (RSE) based on the sandwich formula, which is quite robust
-#'   to the model's misspecification.
+#' Both TR estimators utilize robust
+#'   standard error (RSE) based on the sandwich formula, which can protect against
+#'   the misspecification of model.
 #'
 #' @return Use \code{summary()} function to print out a data frame including summarized results.
 #' \itemize{
 #' \item{\code{Estimate: }}{estimated causal effect (log odds ratio) of exposure on the outcome. }
 #' \item{\code{Robust.SE: }}{estimated robust standard errors used for inference.}
-#' \item{\code{p.value: }}{p values for two-sided Wald test.}
 #' \item{\code{95\% CI: }}{95\% two-sided confidence interval.}}
+#' \item{\code{p.value: }}{p values for two-sided Wald test.}
 #'
-#' In addition, other fitted values are stored in the full list.
+#' In addition, other fitted values are also saved in the list.
 #' \itemize{
 #' \item{\code{vcov: }}{variance-covariance matrix among exposure and covariates.}
-#' \item{\code{fit_ps_all: }}{predicted propensity score values for all subjects used to adjust for the confounding issue.}
-#' \item{\code{fit_weightmiss: }}{fitted inverse weights of missingness used to adjust for the missing issue.}}
-#'
-#' Plots are also provided by calling \code{plot()} function. \code{hist_ps_control, hist_ps_trt: } histogram for predicted propensity score between control and treatment groups.
-#'
+#' \item{\code{fit_ps_all: }}{fitted propensity scores for all subjects, which are used to adjust for the confounding issue.}
+#' \item{\code{fit_weightmiss: }}{fitted inverse weights of missingness used to adjust for the missing issue.}
+#' \item{\code{hist_ps_control, hist_ps_trt: } use \code{plot()} function to draw density plots for fitted propensity score between control and treatment groups.}
+#' }
 #'
 #' @keywords regression, robust.
 #'
-#' @note For more details, please review my GitHub website: https://github.com/yuliang-shi/trmd.
+#' @note For more details, please review \href{https://github.com/yuliang-shi/trmd}{Yuliang's Github}.
 #' For citation, please cite the package as \dQuote{Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.}
 #'
-#' @seealso \code{\link{summary.trmd}} for summarized result and \code{\link{plot.trmd}} for drawing histograms of fitted propensity score.
-#' Other useful functions include \code{\link{svyglm}} for inverse-probability weighting or double robust methods and \code{\link{mice}} for multiple imputation on missing data.
+#' @seealso \code{\link{summary.trmd}} or \code{\link{print.trmd}} for summarized result, \code{\link{plot.trmd}} for drawing histograms of fitted propensity score, and \code{\link{covid19}} for description of real data set.
+#' Other useful functions include \code{\link{svyglm}} for inverse-probability weighting or double robust methods and \code{\link{mice}} for multiple imputation chained equation on missing data.
 #'
 #' @references Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (11/2022).
 #'
@@ -83,6 +79,8 @@
 #'
 #'
 #' @examples
+#' ########The first example for simulated data##########
+#' require("trmd")
 #' set.seed(2000)
 #' n = 2000 #sample size
 #'
@@ -112,7 +110,6 @@
 #' prob_a = prob_a
 #' )
 #'
-#'
 #' ##control the miss rate as 60\%
 #' r_sim = 1.1 - 0.2 * x1 - 0.3 * x2 - 0.6 * x3 - 0.9 * Y #add random error
 #' r = rbinom(n, 1, 1 / (1 + exp(-r_sim))) #miss rate
@@ -123,7 +120,7 @@
 #'
 #' ##test in the simulated data
 #' ##use simplified method
-#' tr_est = trme(
+#' tr_new = trme(
 #'   covs = c("x1", "x2", "x3"),
 #'   Y = "Y",
 #'   A = "A",
@@ -134,11 +131,11 @@
 #' )
 #'
 #' ##print out results and plots
-#' summary(tr_est)
-#' plot(tr_est)
+#' summary(tr_new)
+#' plot(tr_new)
 #'
 #' ##use complex method
-#' tr_est = trme(
+#' tr_ee = trme(
 #'   covs = c("x1", "x2", "x3"),
 #'   Y = "Y",
 #'   A = "A",
@@ -149,9 +146,25 @@
 #' )
 #'
 #' ##print out results and plots
-#' summary(tr_est)
-#' plot(tr_est)
+#' summary(tr_ee)
+#' plot(tr_ee)
 #'
+#' ########The second example for real data##########
+#' require("trmd")
+#' data(covid19)
+#'
+#' ##use new TR estimator
+#' tr_new=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", df_mar=covid19
+#'             ,imp_model=T,quan_value = 0.99,method="new")
+#'
+#' summary(tr_new)
+#'
+#' ##use complex TR estimator
+#' tr_ee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", df_mar=covid19
+#'            ,imp_model=T,quan_value = 0.99,method="ee")
+#'
+#' summary(tr_ee)
+
 #' @importFrom rootSolve multiroot
 #' @importFrom matrixcalc is.singular.matrix
 #' @export
