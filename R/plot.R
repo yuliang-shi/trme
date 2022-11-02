@@ -1,23 +1,23 @@
-#' @title plot() Method for Objects of Class 'trmd'
-#' @param object Objects of Class 'trmd'
+#' @title plot() Method for Objects of Class 'trme'
+#' @param object Objects of Class 'trme'
 #' @param ... additional arguments
 #' @return a histogram plots.
 #' @export
 #'
-plot.trmd<- function(object,...)
+plot.trme<- function(object,...)
 {
-    ##self defined plot function for "trmd" class
+    ##self defined plot function for "trme" class
 
     ##remove NA
-    df_mar_naomit=na.omit(object$df_mar)
+    data_naomit=na.omit(object$data)
 
     ##draw hist plots
     ##cannot store the label
     par(mfrow=c(1,2))
-    p1 <- hist(object$fit_ps_all[df_mar_naomit$A==0],main="Fitted PS Values",
+    p1 <- hist(object$fit_ps_all[data_naomit$A==0],main="Fitted PS Values",
                            xlab="non-exposure group",ylab="density",freq=F,...)
 
-    p2 <- hist(object$fit_ps_all[df_mar_naomit$A==1],main="Fitted PS Values",
+    p2 <- hist(object$fit_ps_all[data_naomit$A==1],main="Fitted PS Values",
                        xlab="exposure group",ylab="density",freq=F,...)
 
     par(mfrow=c(1,1))

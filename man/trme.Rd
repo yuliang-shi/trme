@@ -8,9 +8,10 @@ trme(
   covs,
   Y,
   A,
-  df_mar,
+  data,
   imp_model = T,
-  quan_value = 0.99,
+  shrink_rate = 0.99,
+  ci_alpha = 0.95,
   method = c("new", "ee")
 )
 }
@@ -25,13 +26,15 @@ function currently only works on the binary outcome.}
 \item{A}{\code{\link{character}} the name of binary treatment or exposure
 variable.}
 
-\item{df_mar}{a \code{\link{data.frame}} contains the variables in the models.}
+\item{data}{a \code{\link{data.frame}} contains the variables in the models.}
 
 \item{imp_model}{a \code{\link{logical}} value either \code{TRUE} or \code{FALSE} for correct or wrong imputation model. If the model=\code{FALSE}, the Bayes rule will be applied to estimate it.}
 
-\item{quan_value}{\code{\link{numeric}} shrinkage value. By default, we
+\item{shrink_rate}{\code{\link{numeric}} shrinkage rate. By default, we
 shrink weights larger than 99\% quantile into exact 99\% quantile to avoid
 extreme weights.}
+
+\item{ci_alpha}{\code{\link{numeric}} 0\%-100\% percentage of confidence interval. By default,  95\% CI is present.}
 
 \item{method}{\code{\link{character}} the method to be used. either "new" for simplified TR estimator or "ee" for complex TR estimator.}
 }
@@ -87,12 +90,12 @@ Both TR estimators utilize robust
   the misspecification of model.
 }
 \note{
-For more details, please review \href{https://github.com/yuliang-shi/trmd}{Yuliang's Github}.
+For more details, please review \href{https://github.com/yuliang-shi/trme}{Yuliang's Github}.
 For citation, please cite the package as \dQuote{Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.}
 }
 \examples{
 ########The first example for simulated data##########
-require("trmd")
+require("trme")
 set.seed(2000)
 n = 2000 #sample size
 
@@ -126,9 +129,9 @@ prob_a = prob_a
 r_sim = 1.1 - 0.2 * x1 - 0.3 * x2 - 0.6 * x3 - 0.9 * Y #add random error
 r = rbinom(n, 1, 1 / (1 + exp(-r_sim))) #miss rate
 
-##df_mar: after include missing data
-df_mar = cbind(df, "r" = r)
-df_mar$A[which(df_mar$r == 1)] = NA
+##data: after include missing data
+data = cbind(df, "r" = r)
+data$A[which(data$r == 1)] = NA
 
 ##test in the simulated data
 ##use simplified method
@@ -136,9 +139,10 @@ tr_new = trme(
   covs = c("x1", "x2", "x3"),
   Y = "Y",
   A = "A",
-  df_mar = df_mar,
+  data = data,
   imp_model = T,
-  quan_value = 0.99,
+  shrink_rate = 0.99,
+  ci_alpha=0.95,
   method = "new"
 )
 
@@ -151,9 +155,10 @@ tr_ee = trme(
   covs = c("x1", "x2", "x3"),
   Y = "Y",
   A = "A",
-  df_mar = df_mar,
+  data = data,
   imp_model = T,
-  quan_value = 0.99,
+  shrink_rate = 0.99,
+  ci_alpha=0.95,
   method = "ee"
 )
 
@@ -162,18 +167,18 @@ summary(tr_ee)
 plot(tr_ee)
 
 ########The second example for real data##########
-require("trmd")
+require("trme")
 data(covid19)
 
 ##use new TR estimator
-tr_new=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", df_mar=covid19
-            ,imp_model=T,quan_value = 0.99,method="new")
+tr_new=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19
+            ,imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,method="new")
 
 summary(tr_new)
 
 ##use complex TR estimator
-tr_ee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", df_mar=covid19
-           ,imp_model=T,quan_value = 0.99,method="ee")
+tr_ee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19
+           ,imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,method="ee")
 
 summary(tr_ee)
 }
@@ -183,7 +188,7 @@ Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure 
 Zhang, Z., Liu, W., Zhang, B., Tang, L., and Zhang, J. (2016). \emph{Causal inference with missing exposure information: Methods and applications to an obstetric study}. Statistical Methods in Medical Research 25, 2053–2066.
 }
 \seealso{
-\code{\link{summary.trmd}} or \code{\link{print.trmd}} for summarized result, \code{\link{plot.trmd}} for drawing histograms of fitted propensity score, and \code{\link{covid19}} for description of real data set.
+\code{\link{summary.trme}} or \code{\link{print.trme}} for summarized result, \code{\link{plot.trme}} for drawing histograms of fitted propensity score, and \code{\link{covid19}} for description of real data set.
 Other useful functions include \code{\link{svyglm}} for inverse-probability weighting or double robust methods and \code{\link{mice}} for multiple imputation chained equation on missing data.
 }
 \author{
