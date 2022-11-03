@@ -25,6 +25,7 @@ If the "devtools" does not work, 1) check and update your R version, 2) check yo
 devtools::build github devtools()
 devtools::install_github("yuliang-shi/trme" ,ref="main" ,auth_token = "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")
 ```
+If the R shows the message about "these packages have more recent versions available. It is recommended to update all of them. Which would you like to update?", you can enter either "1" to update all packages or enter "3" to skip updates.
 
 Note 1: The main code should run well on R or Rstudio under either Windows, MacOS, or LINUX operating system. However, sometimes the algorithm may not be converged because the sample size is small, the missing rates are large, or extreme propensity scores occur. We would suggest to try different models, enlarge the sample size, impute missing data to reduce the missing rates.
 
@@ -32,4 +33,4 @@ Note 2: **the current version of the "trme" package only supports the case when 
 
 Note 3: for more technical details, please review and cite our paper: **Yuliang Shi, Yeying Zhu, Joel Dubin. Causal Inference on Missing Exposure via Triple Robust Estimator. Statistics in Medicine Submitted (11/2022).** To support our work, please cite the paper correctly.
 
-To contact the author, please visit [Yuliang's Website](https://uwaterloo.ca/scholar/y323shi/home) or send me an [ email](yuliang.shi@uwaterloo.ca).
+To contact the author, please visit [Yuliang's Website](https://uwaterloo.ca/scholar/y323shi/home) or send me an email: yuliang.shi@uwaterloo.ca.

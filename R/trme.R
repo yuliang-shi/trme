@@ -150,7 +150,7 @@
 #'   method = "ee"
 #' )
 #'
-#' ##print out results and plots
+#' ##print out results and PS plots
 #' summary(tr_ee)
 #' plot(tr_ee)
 #'
@@ -162,12 +162,14 @@
 #' tr_new=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19
 #'             ,imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,method="new")
 #'
+#' ##obtain estimate of causal effect and robust SE.
 #' summary(tr_new)
 #'
 #' ##use complex TR estimator
 #' tr_ee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19
 #'            ,imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,method="ee")
 #'
+#' ##extreme PS occurs and affect estimation. RSE is larger than simplified new TR estimators
 #' summary(tr_ee)
 
 #' @importFrom rootSolve multiroot
