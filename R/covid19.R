@@ -1,8 +1,8 @@
 #' @title COVID-19 Data for Missing Exposure
 #'
 #' @description
-#' Data is collected from an observational study in Brazil during the second wave of pandemic (from 2020-11-01 to 2020-12-02).
-#' For total 162 COVID-19 patients, 128 individuals are fully observed and 33 patients are missing on CVD.
+#' Data is collected from an observational study in Brazil during the second wave of pandemic (from 2020-10-25 to 2020-12-02).
+#' For total 478 COVID-19 patients, 378 individuals are fully observed and 100 patients are missing on CVD (20.9\% missing data).
 #' In our study, the binary outcome is the mortality and the exposure is cardiovascular disease (CVD).
 #' Other clinical variables are collected including age, sex, and diabetes, which may be considered as confounders.
 #'
@@ -15,7 +15,7 @@
 #' \itemize{
 #'   \item \code{age: } \code{\link{numeric}} values.
 #'   \item \code{sex: } \code{\link{character}} binary covariates, either male or female.
-#'   \item \code{CVD: } \code{\link{numeric}}  binary exposure variable, either 0=non-CVD or 1=CVD.
+#'   \item \code{CVD: } \code{\link{numeric}}  binary exposure/treatment variable, either 0=non-CVD or 1=CVD.
 #'   \item \code{diabetes: } \code{\link{character}} binary covariates, either No or Yes.
 #'   \item \code{Y: } \code{\link{numeric}} the binary outcome for the mortality status, either 0=alive or 1=death}
 #'
@@ -25,11 +25,11 @@
 #'
 #' @source View the original raw data in \href{https://integrasus.saude.ce.gov.br/}{IntegraSUS website}
 #'
-#' @references For more details, please review and cite the reference paper: Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (11/2022).
+#' @references For more details, please review and cite the reference paper: Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted.
 #'
 #' @examples
 #' ##attach the data
-#' require("trmd")
+#' require("trme")
 #' data(covid19)
 #'
 #' ##show the structure of dataset

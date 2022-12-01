@@ -10,58 +10,62 @@ trme(
   A,
   data,
   imp_model = T,
-  shrink_rate = 0.99,
+  shrink_rate = 1,
   ci_alpha = 0.95,
-  method = c("new", "ee")
+  method = c("AIPW", "WEE"),
+  bootstrap = T,
+  B = 200
 )
 }
 \arguments{
-\item{covs}{\code{\link{character}}  the vector name of all confounders which
+\item{covs}{\code{\link{character}}  the required vector name of all confounders which
 will affect both exposure and outcome.  Any interaction term or non-linear
 form can be added after creating those variables based on the data.}
 
-\item{Y}{\code{\link{character}} the name of the outcome variable. The trme
+\item{Y}{\code{\link{character}} the required name of the outcome variable. The trme
 function currently only works on the binary outcome.}
 
-\item{A}{\code{\link{character}} the name of binary treatment or exposure
+\item{A}{\code{\link{character}} the required name of binary treatment or exposure
 variable.}
 
-\item{data}{a \code{\link{data.frame}} contains the variables in the models.}
+\item{data}{a required \code{\link{data.frame}} contains the variables in the models.}
 
 \item{imp_model}{a \code{\link{logical}} value either \code{TRUE} or \code{FALSE} for correct or wrong imputation model. If the model=\code{FALSE}, the Bayes rule will be applied to estimate it.}
 
-\item{shrink_rate}{\code{\link{numeric}} shrinkage rate. By default, we
-shrink weights larger than 99\% quantile into exact 99\% quantile to avoid
+\item{shrink_rate}{\code{\link{numeric}} shrinkage rate. By default, no shrinkage applies.
+In some cases, we can shrink weights larger than 99\% quantile into exact 99\% quantile to avoid
 extreme weights.}
 
 \item{ci_alpha}{\code{\link{numeric}} 0\%-100\% percentage of confidence interval. By default,  95\% CI is present.}
 
-\item{method}{\code{\link{character}} the method to be used. either "new" for simplified TR estimator or "ee" for complex TR estimator.}
+\item{method}{\code{\link{character}} the method to be used. either "AIPW" for TR estimator using augmented inverse-probability weighting or "WEE" for TR estimator using weighted estimating equations.}
+
+\item{bootstrap}{a \code{\link{logical}} value either \code{TRUE} or \code{FALSE} for bootstrap method. If \code{TRUE}, provide statistical reference. If \code{FALSE}, only return point estimate.}
+
+\item{B}{a \code{\link{numeric}} value for replication times of bootstrap.}
 }
 \value{
 Use \code{summary()} function to print out a data frame including summarized results.
 \itemize{
 \item{\code{Estimate: }}{estimated causal effect (log odds ratio) of exposure on the outcome. }
-\item{\code{Robust.SE: }}{estimated robust standard errors used for inference.}
-\item{\code{95\% CI: }}{95\% two-sided confidence interval.}}
-\item{\code{p.value: }}{p values for two-sided Wald test.}
+\item{\code{BSE: }}{estimated standard errors via Bootstrap used for inference.}
+\item{\code{95\% CI: }}{95\% two-sided confidence interval.}
+\item{\code{p.value: }}{p values for two-sided Wald test.}}
 
 In addition, other fitted values are also saved in the list.
 \itemize{
-\item{\code{vcov: }}{variance-covariance matrix among exposure and covariates.}
-\item{\code{fit_ps_all: }}{fitted propensity scores for all subjects, which are used to adjust for the confounding issue.}
-\item{\code{fit_weightmiss: }}{fitted inverse weights of missingness used to adjust for the missing issue.}
+\item{\code{fit_ps: }}{fitted propensity scores for all subjects, which are used to adjust for the confounding issue.}
+\item{\code{miss_weights: }}{fitted inverse weights of missingness used to adjust for the missing issue.}
 \item{\code{hist_ps_control, hist_ps_trt: } use \code{plot()} function to draw density plots for fitted propensity score between control and treatment groups.}
 }
 }
 \description{
-Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues via simplified estimating equations with triple robust (TR) properties. Provide robust standard errors for inference purposes.
+Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues via simplified estimating equations with triple robust (TR) properties. Provide estimated standard errors for inference purposes.
 }
 \details{
 The methods currently only work for the missing
   exposure with binary outcome and exposure variables. If either the
-  covariates or outcome is also missing, please impute missing values via
-  \code{\link{mice}}.
+  covariates or outcome is also missing, please impute missing values via \code{\link{mice}}.
 
   The basic assumption is that the exposure variable is
   missing at random (MAR), i.e. given all observed covariates and
@@ -69,35 +73,29 @@ The methods currently only work for the missing
   missing value itself. If the exposure is missing not at random (MNAR), try
   another method instead.
 
-  \code{method="new"} is a simplified estimating
-  equation for the triple robust (TR) estimator (recommended), which speeds
-  up the computation process and avoids some effects of extreme weights in
-  the finite samples, but it still keeps the same TR properties as the complex
-  form. For more details, please review the reference paper.
+  \code{method="AIPW"} is for the triple robust (TR) AIPW estimator, which requires "two correct models from three groups (missing/imputation model group, treatment model group, outcome model group)".
 
-  \code{method="ee"} is a complex estimating equation for TR estimator, which contains more steps and may be influenced by extreme weights.
+  \code{method="WEE"} is a weighted estimating equation for TR estimator (recommended), which avoids some effects of extreme weights in the finite samples, but it still keeps the same TR properties as the complex form. For more details, please review the reference paper.
 
   Both two TR estimators have the same
   asymptotic consistency when the sample size is large. To achieve
-  consistency, both TR estimators require at least **one of two models**
+  consistency, both TR estimators require at least **two correct models from three groups**
   condition, which means if the missingness model is correct, we require
   either the treatment or outcome model to be correct; If the missingness
-  model is wrong, but the outcome model is correct, we require either the
-  imputation or the treatment model to be correct.
+  model is wrong, but the imputation model is correct, we require either the treatment or outcome model to be correct. If both imputation and missingness models are wrong, to acheive consistency, both treatment and outcome models should be correct, in order to apply Bayes approach.
 
-Both TR estimators utilize robust
-  standard error (RSE) based on the sandwich formula, which can protect against
-  the misspecification of model.
+Both TR estimators utilize Bootstrap approach to estimate standard errors which can protect against
+  the misspecification of model based on the simulation studies. By default, parallel computing will be applied to speed up computing process based on the operating system.
 }
 \note{
 For more details, please review \href{https://github.com/yuliang-shi/trme}{Yuliang's Github}.
-For citation, please cite the package as \dQuote{Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.}
+For citation, please cite the package as **Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.**
 }
 \examples{
 ########The first example for simulated data##########
 require("trme")
 set.seed(2000)
-n = 2000 #sample size
+n = 1000 #sample size
 
 #####generate some continuous covariates
 id = seq(1, n, by = 1)
@@ -106,12 +104,12 @@ x2 = rnorm(n)
 x3 = rnorm(n)
 
 #generate binary exposure from the PS model. x1,x2,x3 as confounders
-a = -0.5 + 0.3 * x1 + 0.6 * x2 + 0.6 * x3
+a = -0.2 + 0.8 * x1 + 0.9 * x2 + 1 * x3
 prob_a = 1 / (1 + exp(-a))
 A = rbinom(n, 1, prob_a)
 
 #generate binary outcome from OR model
-z = 0.9 + 1 *A + 0.1 * x1 + 0.3 * x2 + 0.2 * x3   #-1.5 is ok
+z = 0.9 + 1 *A + 0.9 * x1 + 0.6 * x2 + 0.5 * x3   #-1.5 is ok
 Y = rbinom(n, 1, 1 / (1 + exp(-z)))      #' bernoulli response variable
 
 ##df: before remove missing data
@@ -126,7 +124,7 @@ prob_a = prob_a
 )
 
 ##control the miss rate as 60\\%
-r_sim = 1.1 - 0.2 * x1 - 0.3 * x2 - 0.6 * x3 - 0.9 * Y #add random error
+r_sim = -1 +0.4 * x1 +0.6 * x2 +0.8 * x3 - 0.9 * Y #add random error
 r = rbinom(n, 1, 1 / (1 + exp(-r_sim))) #miss rate
 
 ##data: after include missing data
@@ -134,64 +132,71 @@ data = cbind(df, "r" = r)
 data$A[which(data$r == 1)] = NA
 
 ##test in the simulated data
-##use simplified method
-tr_new = trme(
+##use WEE as estimate
+tr_wee = trme(
   covs = c("x1", "x2", "x3"),
   Y = "Y",
   A = "A",
   data = data,
   imp_model = T,
   shrink_rate = 0.99,
-  ci_alpha=0.95,
-  method = "new"
+  ci_alpha=1,
+  method = "WEE",
+  bootstrap=T,
+  B=200
 )
 
 ##print out results and plots
-summary(tr_new)
-plot(tr_new)
+summary(tr_wee)
 
-##use complex method
-tr_ee = trme(
+##use AIPW method
+tr_aipw = trme(
   covs = c("x1", "x2", "x3"),
   Y = "Y",
   A = "A",
   data = data,
   imp_model = T,
-  shrink_rate = 0.99,
+  shrink_rate = 1,
   ci_alpha=0.95,
-  method = "ee"
+  method = "AIPW",
+  bootstrap=T,
+  B=200
 )
 
-##print out results and PS plots
-summary(tr_ee)
-plot(tr_ee)
+##print out results and PS histogram plots
+summary(tr_aipw)
+plot(tr_aipw)
+
 
 ########The second example for real data##########
 require("trme")
 data(covid19)
 
 ##use new TR estimator
-tr_new=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19
-            ,imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,method="new")
+tr_wee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
+            imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,
+            method="WEE",bootstrap=T,B=200)
 
 ##obtain estimate of causal effect and robust SE.
-summary(tr_new)
+summary(tr_wee)
 
-##use complex TR estimator
-tr_ee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19
-           ,imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,method="ee")
+##use TR WEE method
+tr_aipw=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
+           imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,
+           method="AIPW",bootstrap=T,B=200)
 
-##extreme PS occurs and affect estimation. RSE is larger than simplified new TR estimators
-summary(tr_ee)
+##use TR AIPW method
+summary(tr_aipw)
 }
 \references{
-Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (11/2022).
+Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (12/2022).
 
 Zhang, Z., Liu, W., Zhang, B., Tang, L., and Zhang, J. (2016). \emph{Causal inference with missing exposure information: Methods and applications to an obstetric study}. Statistical Methods in Medical Research 25, 2053–2066.
+
+Williamson, E. J., Forbes, A., and Wolfe, R. (2012). \emph{Doubly robust estimators of causal exposure effects with missing data in the outcome, exposure or a confounder}. Statistics in medicine 31, 4382–4400.
 }
 \seealso{
-\code{\link{summary.trme}} or \code{\link{print.trme}} for summarized result, \code{\link{plot.trme}} for drawing histograms of fitted propensity score, and \code{\link{covid19}} for description of real data set.
-Other useful functions include \code{\link{svyglm}} for inverse-probability weighting or double robust methods and \code{\link{mice}} for multiple imputation chained equation on missing data.
+\code{\link{summary.trme}}, \code{\link{print.trme}} for summarized result; \code{\link{plot.trme}} for histograms of fitted propensity score; \code{\link{covid19}} for description of real data set.
 }
 \author{
 Yuliang Shi

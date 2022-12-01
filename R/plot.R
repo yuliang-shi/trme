@@ -4,6 +4,7 @@
 #' @return a histogram plots.
 #' @export
 #'
+#'
 plot.trme<- function(object,...)
 {
     ##self defined plot function for "trme" class
@@ -14,11 +15,11 @@ plot.trme<- function(object,...)
     ##draw hist plots
     ##cannot store the label
     par(mfrow=c(1,2))
-    p1 <- hist(object$fit_ps_all[data_naomit$A==0],main="Fitted PS Values",
-                           xlab="non-exposure group",ylab="density",freq=F,...)
+    p1 <- hist(object$fit_ps[data_naomit$A==0],main="Fitted PS Values",
+                           xlab="non-exposure group",ylab="density",freq=F)
 
-    p2 <- hist(object$fit_ps_all[data_naomit$A==1],main="Fitted PS Values",
-                       xlab="exposure group",ylab="density",freq=F,...)
+    p2 <- hist(object$fit_ps[data_naomit$A==1],main="Fitted PS Values",
+                       xlab="exposure group",ylab="density",freq=F)
 
     par(mfrow=c(1,1))
 
