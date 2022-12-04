@@ -107,7 +107,7 @@
 #' prob_a = prob_a
 #' )
 #'
-#' ##control the miss rate as 60\%
+#' ##control the miss rate as 20\%
 #' r_sim = -1 +0.4 * x1 +0.6 * x2 +0.8 * x3 - 0.9 * Y #add random error
 #' r = rbinom(n, 1, 1 / (1 + exp(-r_sim))) #miss rate
 #'
@@ -116,6 +116,7 @@
 #' data$A[which(data$r == 1)] = NA
 #'
 #' ##test in the simulated data
+#' ##true causal (odds ratio) is 2.247 in this case
 #' ##use WEE as estimate
 #' tr_wee = trme(
 #'   covs = c("x1", "x2", "x3"),
@@ -123,8 +124,8 @@
 #'   A = "A",
 #'   data = data,
 #'   imp_model = T,
-#'   shrink_rate = 0.99,
-#'   ci_alpha=1,
+#'   shrink_rate = 1,
+#'   ci_alpha=0.95,
 #'   method = "WEE",
 #'   bootstrap=T,
 #'   B=200
@@ -158,7 +159,7 @@
 #'
 #' ##use new TR estimator
 #' tr_wee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
-#'             imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,
+#'             imp_model=T,shrink_rate = 1,ci_alpha=0.95,
 #'             method="WEE",bootstrap=T,B=200)
 #'
 #' ##obtain estimate of causal effect and robust SE.
@@ -166,7 +167,7 @@
 #'
 #' ##use TR WEE method
 #' tr_aipw=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
-#'            imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,
+#'            imp_model=T,shrink_rate = 1,ci_alpha=0.95,
 #'            method="AIPW",bootstrap=T,B=200)
 #'
 #' ##use TR AIPW method
@@ -179,13 +180,12 @@
 #' @export
 
 
-trme=function(covs,Y,A,data,imp_model=T,
-              shrink_rate=1,ci_alpha=0.95,method=c("AIPW","WEE"),bootstrap=T,B=200)
+trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
+              method=c("AIPW","WEE"),bootstrap=T,B=200)
 {
 
   ##match the method
-  # method=match.arg(method)
-
+  method=match.arg(method)
 
   ###start the main functions
   ##rename variables in data
@@ -223,7 +223,6 @@ trme=function(covs,Y,A,data,imp_model=T,
   trme_core=function(covs=covs,Y=Y,A=A,data=data,imp_model=imp_model,
                      shrink_rate=shrink_rate,ci_alpha=ci_alpha,method=method)
   {
-
     ##convert data without factor
     df_type=lapply(data[,c("A","Y",covs)], FUN=class)
     fac_index=c(which(df_type=="character"),which(df_type=="factor"))
@@ -493,15 +492,11 @@ trme=function(covs,Y,A,data,imp_model=T,
       {
         ##for trt group
         dr_tau1=data$A*data$Y*inv_ps_dr_all-(data$A-fit_ps_dr_all)*inv_ps_dr_all*data$m1
-        dr_aug_tau1=data$pred_ps_xy*data$Y*inv_ps_dr_all-
-          (data$pred_ps_xy-fit_ps_dr_all)*inv_ps_dr_all*data$m1
+        dr_aug_tau1=data$pred_ps_xy*data$Y*inv_ps_dr_all-(data$pred_ps_xy-fit_ps_dr_all)*inv_ps_dr_all*data$m1
 
         ##for control group
-        dr_tau0=(1-data$A)*data$Y*inv_ps_dr_all_con-
-          (fit_ps_dr_all-data$A)*inv_ps_dr_all_con*data$m0
-
-        dr_aug_tau0=(1-data$pred_ps_xy)*data$Y*inv_ps_dr_all_con-
-          (fit_ps_dr_all-data$pred_ps_xy)*inv_ps_dr_all_con*data$m0
+        dr_tau0=(1-data$A)*data$Y*inv_ps_dr_all_con-(fit_ps_dr_all-data$A)*inv_ps_dr_all_con*data$m0
+        dr_aug_tau0=(1-data$pred_ps_xy)*data$Y*inv_ps_dr_all_con-(fit_ps_dr_all-data$pred_ps_xy)*inv_ps_dr_all_con*data$m0
 
         ###TR AIPW for trt group
         tr_est_tau1=mean((1-data$r)*data$weight_miss*dr_tau1)-
@@ -528,8 +523,7 @@ trme=function(covs,Y,A,data,imp_model=T,
 
 
     #####TR WEE Method######
-    if(method=="WEE")
-    {
+    if(method=="WEE"){
 
       ##predicted response for trt or control
       exbit_trt_fit=exp(XA_trt_all%*%beta_ee_miss)/(1+exp(XA_trt_all%*%beta_ee_miss))
@@ -568,6 +562,9 @@ trme=function(covs,Y,A,data,imp_model=T,
 
 
       ###score function for beta wee0
+      # beta=beta_ee_miss[-2]
+      # x_all=X_all[,1]
+
       score_beta_wee0=function(beta){
 
         exbit_beta=exp(X_all%*%beta)/(1+exp(X_all%*%beta))
@@ -624,31 +621,28 @@ trme=function(covs,Y,A,data,imp_model=T,
         ##and tr_tau_wee1,0 are not larger than 1
         tr_est=(tr_tau_wee1/(1-tr_tau_wee1))/(tr_tau_wee0/(1-tr_tau_wee0))
       }
+
     }
 
     data$A[which(data$A==-100)] =NA
 
 
     ##point est
-    out=list("Estimate"=tr_est, "fit_ps"=as.vector(fit_ps_dr_all),
-             "miss_weights"=data$weight_miss,data=data)
+    out=list("Estimate"=tr_est, "fit_ps"=as.vector(fit_ps_dr_all),"miss_weights"=data$weight_miss,data=data)
     return(out)
 
   }
 
 
+  ##point estimate
+  tr_est=trme_core(covs=covs,Y=Y,A=A,data=data,imp_model=imp_model,
+                   shrink_rate=shrink_rate,ci_alpha=ci_alpha,method=method)
+  point_est=tr_est$Estimate
 
   ###########Bootstrap Function ##############
 
 
   if(bootstrap==T){
-
-
-    ##point estimate
-    tr_est=trme_core(covs=covs,Y=Y,A=A,data=data,imp_model=imp_model,
-                     shrink_rate=shrink_rate,ci_alpha=ci_alpha,method=method)
-
-    point_est=tr_est$Estimate
 
     ##variance
     boot_fun=function(j) {
@@ -703,58 +697,67 @@ trme=function(covs,Y,A,data,imp_model=T,
     }
 
     ##step3: bootstrap standard error 4x1 vector
-    boot_se=sd(boot_vec)
+    # boot_se=sd(boot_vec)
+    #
+    # ##summary dataframe
+    # df_sum=data.frame(
+    #   "Estimate"=point_est,
+    #   "BSE"=boot_se
+    #   # ,"na_boot"=length(boot_na_col)
+    #   )
+    #
+    # df_sum=round(df_sum,3)
+    # row.names(df_sum)=paste0("TR ",method)
+    # df_sum
+    #
+    # ##95% CI. paste0 without dropping 0
+    # tr_ci_low=round(point_est-qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
+    # tr_ci_up=round(point_est+qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
+    # tr_ci=paste0("(",format(tr_ci_low,drop0Trailing = F),",",format(tr_ci_up,drop0Trailing = F),")")
+    # df_sum=cbind(df_sum,"ci"=tr_ci)
+    # colnames(df_sum)[which(colnames(df_sum)=="ci")]=paste0(100*ci_alpha,"% CI")
 
-    ##summary dataframe
-    df_sum=data.frame(
-      "Estimate"=point_est,
-      "BSE"=boot_se
-      # ,"na_boot"=length(boot_na_col)
-    )
+    ##add p value as 3 digit.
+    #change character <0.001 when smaller than 0.001
+    # df_sum$p.value=2*(1-pnorm(q=abs(point_est/boot_se-1),mean=0,sd=1))
+    # df_sum$p.value=round(df_sum$p.value,3)
 
-    df_sum=round(df_sum,3)
-    row.names(df_sum)=paste0("TR ",method)
-    df_sum
+    ####bootstrap percentile CI ####
+    ci_low_hybrid=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
+    ci_up_hybrid=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
+    tr_ci=paste0("(",format(ci_low_hybrid,drop0Trailing = F),",",format(ci_up_hybrid,drop0Trailing = F),")")
 
-    ##95% CI. paste0 without dropping 0
-    tr_ci_low=round(point_est-qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
-    tr_ci_up=round(point_est+qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
-    tr_ci=paste0("(",format(tr_ci_low,drop0Trailing = F),",",format(tr_ci_up,drop0Trailing = F),")")
-    df_sum=cbind(df_sum,"ci"=tr_ci)
-    colnames(df_sum)[which(colnames(df_sum)=="ci")]=paste0(100*ci_alpha,"% CI")
+    ####percentile pvalue
+    p.value=sum(boot_vec>=point_est)/B
 
-    ##add p value as 3 digit. compare with 1.
-    ##change character <0.001 when smaller than 0.001
-    df_sum$p.value=2*(1-pnorm(q=abs(point_est/boot_se-1),mean=0,sd=1))
-    df_sum$p.value=round(df_sum$p.value,3)
+    if(p.value<0.001){
+      p.value="<0.001"
 
-    if(df_sum$p.value<0.001)
-      df_sum$p.value="<0.001"
-
-
-    ####return final list####
-    final=list("results"=df_sum,"fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,data=data)
-
+    }else{
+      p.value=round(p.value,3)
     }
 
-  if(bootstrap==F)
-
-  {
-    ##point estimate
-    tr_est=trme_core(covs=covs,Y=Y,A=A,data=data,imp_model=imp_model,
-                     shrink_rate=shrink_rate,ci_alpha=ci_alpha,method=method,data=data)
-
-    ##if not use bootstrap, only return point est
-    df_sum=data.frame("Estimate"=tr_est)
-    df_sum=round(df_sum,3)
-
-    ##return final list
-    final=list("results"=df_sum,"fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,data=data)
+    ###summary df
+    df_sum=data.frame(round(point_est,3),tr_ci,p.value)
+    rownames(df_sum)=paste0("TR ",method,": ",A)
+    colnames(df_sum)=c("Estimate",paste0(100*ci_alpha,"% CI"),"p.value")
   }
 
+  if(bootstrap==F)
+  {
 
-  ##return
+    ##if not use bootstrap, only return point est
+    df_sum=data.frame("Estimate"=point_est)
+    df_sum=round(df_sum,3)
+    rownames(df_sum)=paste0("TR ",method,": ",A)
+
+  }
+
+  ##return final list
+  final=list("results"=df_sum,"fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,data=data)
+
   structure(final,class="trme")
+
 }
 
 

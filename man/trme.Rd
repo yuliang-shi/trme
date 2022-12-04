@@ -123,7 +123,7 @@ df = data.frame(
 prob_a = prob_a
 )
 
-##control the miss rate as 60\\%
+##control the miss rate as 20\\%
 r_sim = -1 +0.4 * x1 +0.6 * x2 +0.8 * x3 - 0.9 * Y #add random error
 r = rbinom(n, 1, 1 / (1 + exp(-r_sim))) #miss rate
 
@@ -132,6 +132,7 @@ data = cbind(df, "r" = r)
 data$A[which(data$r == 1)] = NA
 
 ##test in the simulated data
+##true causal (odds ratio) is 2.247 in this case
 ##use WEE as estimate
 tr_wee = trme(
   covs = c("x1", "x2", "x3"),
@@ -139,8 +140,8 @@ tr_wee = trme(
   A = "A",
   data = data,
   imp_model = T,
-  shrink_rate = 0.99,
-  ci_alpha=1,
+  shrink_rate = 1,
+  ci_alpha=0.95,
   method = "WEE",
   bootstrap=T,
   B=200
@@ -174,7 +175,7 @@ data(covid19)
 
 ##use new TR estimator
 tr_wee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
-            imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,
+            imp_model=T,shrink_rate = 1,ci_alpha=0.95,
             method="WEE",bootstrap=T,B=200)
 
 ##obtain estimate of causal effect and robust SE.
@@ -182,7 +183,7 @@ summary(tr_wee)
 
 ##use TR WEE method
 tr_aipw=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
-           imp_model=T,shrink_rate = 0.99,ci_alpha=0.95,
+           imp_model=T,shrink_rate = 1,ci_alpha=0.95,
            method="AIPW",bootstrap=T,B=200)
 
 ##use TR AIPW method
