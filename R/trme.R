@@ -33,7 +33,7 @@
 #'   missing value itself. If the exposure is missing not at random (MNAR), try
 #'   another method instead.
 #'
-#'   \code{method="AIPW"} is for the triple robust (TR) AIPW estimator, which requires "two correct models from three groups (missing/imputation model group, treatment model group, outcome model group)".
+#'   \code{method="AIPW"} is for the TR AIPW estimator, which requires "two correct models from three groups (missing/imputation model group, treatment model group, outcome model group)".
 #'
 #'   \code{method="WEE"} is a weighted estimating equation for TR estimator (recommended), which avoids some effects of extreme weights in the finite samples, but it still keeps the same TR properties as the complex form. For more details, please review the reference paper.
 #'
@@ -49,8 +49,7 @@
 #'
 #' @return Use \code{summary()} function to print out a data frame including summarized results.
 #' \itemize{
-#' \item{\code{Estimate: }}{estimated causal effect (log odds ratio) of exposure on the outcome. }
-#' \item{\code{BSE: }}{estimated standard errors via Bootstrap used for inference.}
+#' \item{\code{Estimate: }}{estimated causal effect (odds ratio) of exposure on the outcome. }
 #' \item{\code{95\% CI: }}{95\% two-sided confidence interval.}
 #' \item{\code{p.value: }}{p values for two-sided Wald test.}}
 #'
@@ -162,7 +161,7 @@
 #'             imp_model=T,shrink_rate = 1,ci_alpha=0.95,
 #'             method="WEE",bootstrap=T,B=200)
 #'
-#' ##obtain estimate of causal effect and robust SE.
+#' ##obtain estimate of causal effect and CI
 #' summary(tr_wee)
 #'
 #' ##use TR WEE method
@@ -723,9 +722,9 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
     # df_sum$p.value=round(df_sum$p.value,3)
 
     ####bootstrap percentile CI ####
-    ci_low_hybrid=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
-    ci_up_hybrid=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
-    tr_ci=paste0("(",format(ci_low_hybrid,drop0Trailing = F),",",format(ci_up_hybrid,drop0Trailing = F),")")
+    ci_low_per=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
+    ci_up_per=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
+    tr_ci=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
 
     ####percentile pvalue
     p.value=sum(boot_vec>=point_est)/B
