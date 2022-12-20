@@ -1,7 +1,7 @@
 Package: trme
 Type: Package
 Title: Package for Triple Robust Estimation on Missing Exposure.
-Version: 1.1.0
+Version: 1.2.0
 Author: Yuliang Shi
 Maintainer: Yuliang Shi <yuliang.shi@uwaterloo.ca>
 Depends: R (>= 4.1.0)

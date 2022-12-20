@@ -46,7 +46,7 @@ Use \code{summary()} function to print out a data frame including summarized res
 \itemize{
 \item{\code{Estimate: }}{estimated causal effect  (odds ratio) of exposure on the outcome. }
 \item{\code{95\% CI: }}{95\% two-sided confidence interval.}
-\item{\code{p.value: }}{p values for two-sided Wald test.}}
+\item{\code{p.value: }}{p values for two-sided Wald test. H0: true causal effect (OR) is 1}}
 
 In addition, other fitted values are also saved in the list.
 \itemize{

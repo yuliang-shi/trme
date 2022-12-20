@@ -20,9 +20,9 @@ View the original raw data in \href{https://integrasus.saude.ce.gov.br/}{Integra
 \code{data(covid19)}
 }
 \description{
-Data is collected from an observational study in Brazil during the second wave of pandemic (from 2020-10-25 to 2020-12-02).
-For total 478 COVID-19 patients, 378 individuals are fully observed and 100 patients are missing on CVD (20.9\% missing data).
-In our study, the binary outcome is the mortality and the exposure is cardiovascular disease (CVD).
+Data is collected from an observational study in Brazil during the second wave of pandemic (from 2020-10-05 to 2020-12-01).
+For total 749 COVID-19 patients, around 18\% patients are missing on cardiovascular disease (CVD).
+In our study, the binary outcome is the mortality and the exposure is CVD.
 Other clinical variables are collected including age, sex, and diabetes, which may be considered as confounders.
 }
 \examples{

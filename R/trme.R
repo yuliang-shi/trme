@@ -51,7 +51,7 @@
 #' \itemize{
 #' \item{\code{Estimate: }}{estimated causal effect (odds ratio) of exposure on the outcome. }
 #' \item{\code{95\% CI: }}{95\% two-sided confidence interval.}
-#' \item{\code{p.value: }}{p values for two-sided Wald test.}}
+#' \item{\code{p.value: }}{p values for two-sided Wald test. H0: true causal effect (OR) is 1}}
 #'
 #' In addition, other fitted values are also saved in the list.
 #' \itemize{
@@ -185,6 +185,7 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
 
   ##match the method
   method=match.arg(method)
+
 
   ###start the main functions
   ##rename variables in data
@@ -696,50 +697,30 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
     }
 
     ##step3: bootstrap standard error 4x1 vector
-    # boot_se=sd(boot_vec)
-    #
-    # ##summary dataframe
-    # df_sum=data.frame(
-    #   "Estimate"=point_est,
-    #   "BSE"=boot_se
-    #   # ,"na_boot"=length(boot_na_col)
-    #   )
-    #
-    # df_sum=round(df_sum,3)
-    # row.names(df_sum)=paste0("TR ",method)
-    # df_sum
-    #
-    # ##95% CI. paste0 without dropping 0
-    # tr_ci_low=round(point_est-qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
-    # tr_ci_up=round(point_est+qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
-    # tr_ci=paste0("(",format(tr_ci_low,drop0Trailing = F),",",format(tr_ci_up,drop0Trailing = F),")")
-    # df_sum=cbind(df_sum,"ci"=tr_ci)
-    # colnames(df_sum)[which(colnames(df_sum)=="ci")]=paste0(100*ci_alpha,"% CI")
+    boot_se=sd(boot_vec)
 
-    ##add p value as 3 digit.
-    #change character <0.001 when smaller than 0.001
-    # df_sum$p.value=2*(1-pnorm(q=abs(point_est/boot_se-1),mean=0,sd=1))
-    # df_sum$p.value=round(df_sum$p.value,3)
+    ###95% CI. paste0 without dropping 0
+    ci_low_bse=round(point_est-qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
+    ci_up_bse=round(point_est+qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
+    ci_bse=paste0("(",format(ci_low_bse,drop0Trailing = F),",",
+                  format(ci_up_bse,drop0Trailing = F),")")
+
+    ##test H0: tau=1 vs Ha: tau \neq 1
+    #change to pvalue <0.001 when smaller than 0.001
+    z_obs=(point_est-1)/boot_se
+    pvalue_bse=2*(1-pnorm(q=abs(z_obs),mean=0,sd=1))
+    pvalue_bse=round(pvalue_bse,3)
 
     ####bootstrap percentile CI ####
     ci_low_per=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
     ci_up_per=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
-    tr_ci=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
-
-    ####percentile pvalue
-    p.value=sum(boot_vec>=point_est)/B
-
-    if(p.value<0.001){
-      p.value="<0.001"
-
-    }else{
-      p.value=round(p.value,3)
-    }
+    ci_per=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
 
     ###summary df
-    df_sum=data.frame(round(point_est,3),tr_ci,p.value)
+    df_sum=data.frame(round(point_est,3),round(boot_se,3),ci_bse,ci_per,pvalue_bse)
     rownames(df_sum)=paste0("TR ",method,": ",A)
-    colnames(df_sum)=c("Estimate",paste0(100*ci_alpha,"% CI"),"p.value")
+    colnames(df_sum)=c("Estimate","BSE",paste0(100*ci_alpha,"% CI BSE"),
+                       paste0(100*ci_alpha,"% CI Per"),"p.value")
   }
 
   if(bootstrap==F)
@@ -753,10 +734,10 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
   }
 
   ##return final list
-  final=list("results"=df_sum,"fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,data=data)
+  final=list("results"=df_sum,"fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,
+             data=data)
 
   structure(final,class="trme")
-
 }
 
 

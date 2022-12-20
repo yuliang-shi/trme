@@ -45,7 +45,7 @@
 #' \itemize{
 #' \item{\code{Estimate: }}{estimated causal effect  (odds ratio) of exposure on the outcome. }
 #' \item{\code{95\% CI: }}{95\% two-sided confidence interval.}
-#' \item{\code{p.value: }}{p values for two-sided Wald test.}}
+#' \item{\code{p.value: }}{p values for two-sided Wald test. H0: true causal effect (OR) is 1}}
 #'
 #' In addition, other fitted values are also saved in the list.
 #' \itemize{
@@ -202,6 +202,8 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
   ##match the method
   method=match.arg(method)
 
+  #####IPWE core function ######
+
   ###start the main functions
   ##rename variables in data
   names(data)[names(data)==Y]="Y"
@@ -279,7 +281,8 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
     #####step1: fit alpha ipw constructed from Miss+PS model#######
     ##Miss model must be correct, so alpha ee becomes WLA IPW
     ipw_design=svydesign(ids=~1, weights=~weight_miss, data=data_naomit)
-    alpha_ipwglm= svyglm(as.formula(paste("A~",paste(covs,collapse = "+"))),design=ipw_design,family=quasibinomial(link="logit"),data=data_naomit)
+    alpha_ipwglm= svyglm(as.formula(paste("A~",paste(covs,collapse = "+"))),
+                         design=ipw_design,family=quasibinomial(link="logit"),data=data_naomit)
 
     ##alpha ipw
     alpha_ipw=coefficients(alpha_ipwglm)
@@ -290,31 +293,22 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
 
     #####step2: fit beta IPW #####
     ##miss model must be correct, so beta ee becomes beta IPW
-    beta_glmipw=svyglm(as.formula(paste("Y~A+",paste(covs,collapse = "+"))),design=ipw_design,family=quasibinomial(link="logit"),data=data_naomit)
+    ##fit separate or models on trt group
+    or_trt_design=svydesign(ids=~1, weights=~weight_miss, data=subset(data_naomit,A==1))
+    beta_trt_glm=svyglm(as.formula(paste("Y~",paste(covs,collapse = "+"))),
+                        design=or_trt_design,family=quasibinomial(link="logit"))
+    beta_trt_ipw=coefficients(beta_trt_glm)
 
-    ##beta ipw
-    beta_ipw=coefficients(beta_glmipw)
+    ##fit separate or models on control group
+    or_con_design=svydesign(ids=~1, weights=~weight_miss, data=subset(data_naomit,A==0))
+    beta_con_glm=svyglm(as.formula(paste("Y~",paste(covs,collapse = "+"))),
+                        design=or_con_design,family=quasibinomial(link="logit"))
+    beta_con_ipw=coefficients(beta_con_glm)
 
+    ##predict for response in trt and control group
+    m1_ipw=as.vector(predict(beta_trt_glm,newdata =data[,c("Y",covs)],type = "response"))
+    m0_ipw=as.vector(predict(beta_con_glm,newdata =data[,c("Y",covs)],type = "response"))
 
-    ##fitted response values in outcome model
-    data_trt=data
-    data_trt$A=1
-
-    data_con=data
-    data_con$A=0
-
-    m1_ipw=as.vector(predict(beta_glmipw,newdata =data_trt,type = "response"))
-    m0_ipw=as.vector(predict(beta_glmipw,newdata =data_con,type = "response"))
-
-    ##X matrix as input variable values
-    ##without the treatment
-    X_all=as.matrix(data[,c("x0",covs)])
-
-    ##with trt
-    XA_all=as.matrix(data[,c("x0","A",covs)])
-
-    ##set diff of F all-Fobs
-    F_diff=rep(0,ncol(X_all))
 
     ##reset NA value
     data$A[is.na(data$A)] = -100
@@ -347,6 +341,13 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
     }
 
 
+    ##X matrix as input variable values
+    ##without the treatment
+    X_all=as.matrix(data[,c("x0",covs)])
+
+    ##set diff of F all-Fobs
+    F_diff=rep(0,ncol(X_all))
+
     if(method=="IPW-WEE"){
 
       ##for trt group
@@ -374,7 +375,7 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
       }
 
       #beta
-      beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_ipw[1]+beta_ipw[2],beta_ipw[-c(1,2)]))
+      beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_trt_ipw))
 
 
       ##for control group
@@ -402,7 +403,7 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
       }
 
       #beta
-      beta_wee0_sol=multiroot(f = score_beta_wee0, start =beta_ipw[-2])
+      beta_wee0_sol=multiroot(f = score_beta_wee0, start =beta_con_ipw)
 
       ##estimated beta WEE
       beta_ipw_wee1=beta_wee1_sol$root
@@ -421,6 +422,9 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
       {
         ##if estimate tau is too large, remove TR WEE
         tau_ipw_wee=NA
+
+        warning("Algorithm is not converaged. Enlarge sample size or specify correct models.")
+
       }else{
 
         ##estimate IPW WEE only when beta_ipw_wee is converged
@@ -507,50 +511,29 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
     }
 
     ##step3: bootstrap standard error 4x1 vector
-    # boot_se=sd(boot_vec)
-    #
-    # ##summary dataframe
-    # df_sum=data.frame(
-    #   "Estimate"=point_est,
-    #   "BSE"=boot_se
-    #   # ,"na_boot"=length(boot_na_col)
-    #   )
-    #
-    # df_sum=round(df_sum,3)
-    # row.names(df_sum)=paste0("TR ",method)
-    # df_sum
-    #
-    # ##95% CI. paste0 without dropping 0
-    # tr_ci_low=round(point_est-qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
-    # tr_ci_up=round(point_est+qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
-    # tr_ci=paste0("(",format(tr_ci_low,drop0Trailing = F),",",format(tr_ci_up,drop0Trailing = F),")")
-    # df_sum=cbind(df_sum,"ci"=tr_ci)
-    # colnames(df_sum)[which(colnames(df_sum)=="ci")]=paste0(100*ci_alpha,"% CI")
+    boot_se=sd(boot_vec)
 
-    ##add p value as 3 digit.
-    #change character <0.001 when smaller than 0.001
-    # df_sum$p.value=2*(1-pnorm(q=abs(point_est/boot_se-1),mean=0,sd=1))
-    # df_sum$p.value=round(df_sum$p.value,3)
+    ###95% CI. paste0 without dropping 0
+    ci_low_bse=round(point_est-qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
+    ci_up_bse=round(point_est+qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
+    ci_bse=paste0("(",format(ci_low_bse,drop0Trailing = F),",",format(ci_up_bse,drop0Trailing = F),")")
+
+    ##test H0: tau=1 vs Ha: tau \neq 1
+    #change to pvalue <0.001 when smaller than 0.001
+    z_obs=(point_est-1)/boot_se
+    pvalue_bse=2*(1-pnorm(q=abs(z_obs),mean=0,sd=1))
+    pvalue_bse=round(pvalue_bse,3)
 
     ####bootstrap percentile CI ####
-    ci_low_hybrid=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
-    ci_up_hybrid=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
-    tr_ci=paste0("(",format(ci_low_hybrid,drop0Trailing = F),",",format(ci_up_hybrid,drop0Trailing = F),")")
-
-    ####percentile pvalue
-    p.value=sum(boot_vec>=point_est)/B
-
-    if(p.value<0.001){
-      p.value="<0.001"
-
-    }else{
-      p.value=round(p.value,3)
-    }
+    ci_low_per=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
+    ci_up_per=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
+    ci_per=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
 
     ###summary df
-    df_sum=data.frame(round(point_est,3),tr_ci,p.value)
+    df_sum=data.frame(round(point_est,3),round(boot_se,3),ci_bse,ci_per,pvalue_bse)
     rownames(df_sum)=paste0(method,": ",A)
-    colnames(df_sum)=c("Estimate",paste0(100*ci_alpha,"% CI"),"p.value")
+    colnames(df_sum)=c("Estimate","BSE",paste0(100*ci_alpha,"% CI BSE"),
+                       paste0(100*ci_alpha,"% CI Per"),"p.value")
   }
 
   if(bootstrap==F)
@@ -565,7 +548,6 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
 
   ##return final list
   final=list("results"=df_sum,"fit_ps"=ipw_est$fit_ps,"miss_weights"=ipw_est$miss_weights,data=data)
-
   structure(final,class="trme")
 
 }
