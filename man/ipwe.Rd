@@ -85,8 +85,8 @@ For citation, please cite the package as **Yuliang Shi, Yeying Zhu, Joel Dubin. 
 \examples{
 ########The first example for simulated data##########
 require("trme")
-set.seed(2000)
-n = 1000 #sample size
+set.seed(2021)
+n = 1500 #sample size
 
 #####generate some continuous covariates
 id = seq(1, n, by = 1)
@@ -100,7 +100,7 @@ prob_a = 1 / (1 + exp(-a))
 A = rbinom(n, 1, prob_a)
 
 #generate binary outcome from OR model
-z = 0.9 + 1 *A + 0.9 * x1 + 0.6 * x2 + 0.5 * x3   #-1.5 is ok
+z = 0.9 + 1 *A + 0.9 * x1 + 0.6 * x2 + 0.5 * x3
 Y = rbinom(n, 1, 1 / (1 + exp(-z)))      #' bernoulli response variable
 
 ##df: before remove missing data
@@ -137,9 +137,11 @@ ipw_wee = ipwe(
   B=200
 )
 
-##print out results and plots
+##print out results
 summary(ipw_wee)
-plot(ipw_wee)
+
+##draw plots
+##plot(ipw_wee)
 
 ##use IPW-DR method
 ipw_dr = ipwe(
@@ -156,22 +158,6 @@ ipw_dr = ipwe(
 
 ##print out results
 summary(ipw_dr)
-
-##use IPW-IPW method
-ipw_ipw = ipwe(
-  covs = c("x1", "x2", "x3"),
-  Y = "Y",
-  A = "A",
-  data = data,
-  shrink_rate = 1,
-  ci_alpha=0.95,
-  method = "IPW-IPW",
-  bootstrap=T,
-  B=200
-)
-
-##print out results
-summary(ipw_ipw)
 
 
 ########The second example for real data##########
@@ -191,16 +177,8 @@ ipw_dr=ipwe(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
            shrink_rate = 1,ci_alpha=0.95,
            method="IPW-DR",bootstrap=T,B=200)
 
-##use TR AIPW method
 summary(ipw_dr)
 
-##use traditional IPW IPW method
-ipw_ipw=ipwe(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
-           shrink_rate = 1,ci_alpha=0.95,
-           method="IPW-IPW",bootstrap=T,B=200)
-
-##use TR AIPW method
-summary(ipw_ipw)
 }
 \references{
 Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (12/2022).

@@ -93,8 +93,8 @@ For citation, please cite the package as **Yuliang Shi, Yeying Zhu, Joel Dubin. 
 \examples{
 ########The first example for simulated data##########
 require("trme")
-set.seed(2000)
-n = 1000 #sample size
+set.seed(2021)
+n = 1500 #sample size
 
 #####generate some continuous covariates
 id = seq(1, n, by = 1)
@@ -143,7 +143,7 @@ tr_wee = trme(
   ci_alpha=0.95,
   method = "WEE",
   bootstrap=T,
-  B=200
+  B=500
 )
 
 ##print out results and plots
@@ -160,27 +160,29 @@ tr_aipw = trme(
   ci_alpha=0.95,
   method = "AIPW",
   bootstrap=T,
-  B=200
+  B=500
 )
 
-##print out results and PS histogram plots
+##print out results
 summary(tr_aipw)
-plot(tr_aipw)
+
+##draw PS histogram plots
+##plot(tr_aipw)
 
 
 ########The second example for real data##########
 require("trme")
 data(covid19)
 
-##use new TR estimator
+##use TR WEE estimator
 tr_wee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
             imp_model=T,shrink_rate = 1,ci_alpha=0.95,
             method="WEE",bootstrap=T,B=200)
 
-##obtain estimate of causal effect and CI
+##estimate of causal effect and CI
 summary(tr_wee)
 
-##use TR WEE method
+##use TR AIPW method
 tr_aipw=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
            imp_model=T,shrink_rate = 1,ci_alpha=0.95,
            method="AIPW",bootstrap=T,B=200)

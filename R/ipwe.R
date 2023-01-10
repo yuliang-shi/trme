@@ -71,8 +71,8 @@
 #' @examples
 #' ########The first example for simulated data##########
 #' require("trme")
-#' set.seed(2000)
-#' n = 1000 #sample size
+#' set.seed(2021)
+#' n = 1500 #sample size
 #'
 #' #####generate some continuous covariates
 #' id = seq(1, n, by = 1)
@@ -86,7 +86,7 @@
 #' A = rbinom(n, 1, prob_a)
 #'
 #' #generate binary outcome from OR model
-#' z = 0.9 + 1 *A + 0.9 * x1 + 0.6 * x2 + 0.5 * x3   #-1.5 is ok
+#' z = 0.9 + 1 *A + 0.9 * x1 + 0.6 * x2 + 0.5 * x3
 #' Y = rbinom(n, 1, 1 / (1 + exp(-z)))      #' bernoulli response variable
 #'
 #' ##df: before remove missing data
@@ -123,9 +123,11 @@
 #'   B=200
 #' )
 #'
-#' ##print out results and plots
+#' ##print out results
 #' summary(ipw_wee)
-#' plot(ipw_wee)
+#'
+#' ##draw plots
+#' ##plot(ipw_wee)
 #'
 #' ##use IPW-DR method
 #' ipw_dr = ipwe(
@@ -142,22 +144,6 @@
 #'
 #' ##print out results
 #' summary(ipw_dr)
-#'
-#'##use IPW-IPW method
-#'ipw_ipw = ipwe(
-#'   covs = c("x1", "x2", "x3"),
-#'   Y = "Y",
-#'   A = "A",
-#'   data = data,
-#'   shrink_rate = 1,
-#'   ci_alpha=0.95,
-#'   method = "IPW-IPW",
-#'   bootstrap=T,
-#'   B=200
-#' )
-#'
-#' ##print out results
-#' summary(ipw_ipw)
 #'
 #'
 #' ########The second example for real data##########
@@ -177,17 +163,8 @@
 #'            shrink_rate = 1,ci_alpha=0.95,
 #'            method="IPW-DR",bootstrap=T,B=200)
 #'
-#' ##use TR AIPW method
 #' summary(ipw_dr)
 #'
-#' ##use traditional IPW IPW method
-#' ipw_ipw=ipwe(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
-#'            shrink_rate = 1,ci_alpha=0.95,
-#'            method="IPW-IPW",bootstrap=T,B=200)
-#'
-#' ##use TR AIPW method
-#' summary(ipw_ipw)
-
 #' @importFrom rootSolve multiroot
 #' @importFrom survey svydesign svyglm
 #' @importFrom parallel mclapply detectCores makeCluster stopCluster
@@ -522,12 +499,24 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
     #change to pvalue <0.001 when smaller than 0.001
     z_obs=(point_est-1)/boot_se
     pvalue_bse=2*(1-pnorm(q=abs(z_obs),mean=0,sd=1))
-    pvalue_bse=round(pvalue_bse,3)
+
+    if(pvalue_bse<0.01){
+
+      pvalue_bse="<0.01"
+    }else{
+
+      pvalue_bse=round(pvalue_bse,3)
+    }
 
     ####bootstrap percentile CI ####
     ci_low_per=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
     ci_up_per=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
     ci_per=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
+
+    ###pvalue per
+    # quan_1=mean(boot_vec>1)
+    # quan_tauhat=mean(boot_vec>point_est)
+    # pvalue_per=abs(1-2*abs(quan_1-quan_tauhat))
 
     ###summary df
     df_sum=data.frame(round(point_est,3),round(boot_se,3),ci_bse,ci_per,pvalue_bse)
