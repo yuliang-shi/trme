@@ -490,12 +490,19 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
     ##step3: bootstrap standard error 4x1 vector
     boot_se=sd(boot_vec)
 
-    ###95% CI. paste0 without dropping 0
+    ####way1: bootstrap percentile CI ####
+    ci_low_per=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
+    ci_up_per=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
+    ci_per=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
+
+
+    ###way2: CI BSE.
     ci_low_bse=round(point_est-qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
     ci_up_bse=round(point_est+qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
     ci_bse=paste0("(",format(ci_low_bse,drop0Trailing = F),",",format(ci_up_bse,drop0Trailing = F),")")
 
-    ##test H0: tau=1 vs Ha: tau \neq 1
+    ##test and pvalue using BSE
+    ##H0: tau=1 vs Ha: tau \neq 1
     #change to pvalue <0.001 when smaller than 0.001
     z_obs=(point_est-1)/boot_se
     pvalue_bse=2*(1-pnorm(q=abs(z_obs),mean=0,sd=1))
@@ -507,16 +514,6 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
 
       pvalue_bse=round(pvalue_bse,3)
     }
-
-    ####bootstrap percentile CI ####
-    ci_low_per=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
-    ci_up_per=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
-    ci_per=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
-
-    ###pvalue per
-    # quan_1=mean(boot_vec>1)
-    # quan_tauhat=mean(boot_vec>point_est)
-    # pvalue_per=abs(1-2*abs(quan_1-quan_tauhat))
 
     ###summary df
     df_sum=data.frame(round(point_est,3),round(boot_se,3),ci_bse,ci_per,pvalue_bse)
@@ -535,8 +532,10 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
 
   }
 
-  ##return final list
-  final=list("results"=df_sum,"fit_ps"=ipw_est$fit_ps,"miss_weights"=ipw_est$miss_weights,data=data)
+  final=list("results"=df_sum,"method"=method,
+             "fit_ps"=ipw_est$fit_ps,"miss_weights"=ipw_est$miss_weights,
+             "boot_est"=boot_vec,data=data)
+
   structure(final,class="trme")
 
 }

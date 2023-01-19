@@ -12,7 +12,7 @@ trme(
   imp_model = T,
   shrink_rate = 1,
   ci_alpha = 0.95,
-  method = c("AIPW", "WEE"),
+  method = c("TR-AIPW", "TR-WEE"),
   bootstrap = T,
   B = 200
 )
@@ -72,9 +72,9 @@ The methods currently only work for the missing
   missing value itself. If the exposure is missing not at random (MNAR), try
   another method instead.
 
-  \code{method="AIPW"} is for the TR AIPW estimator, which requires "two correct models from three groups (missing/imputation model group, treatment model group, outcome model group)".
+  \code{method="TR-AIPW"} is for the TR AIPW estimator, which requires "two correct models from three groups (missing/imputation model group, treatment model group, outcome model group)".
 
-  \code{method="WEE"} is a weighted estimating equation for TR estimator (recommended), which avoids some effects of extreme weights in the finite samples, but it still keeps the same TR properties as the complex form. For more details, please review the reference paper.
+  \code{method="TR-WEE"} is a weighted estimating equation for TR estimator (recommended), which avoids some effects of extreme weights in the finite samples, but it still keeps the same TR properties as the complex form. For more details, please review the reference paper.
 
   Both two TR estimators have the same
   asymptotic consistency when the sample size is large. To achieve
@@ -141,7 +141,7 @@ tr_wee = trme(
   imp_model = T,
   shrink_rate = 1,
   ci_alpha=0.95,
-  method = "WEE",
+  method = "TR-WEE",
   bootstrap=T,
   B=500
 )
@@ -158,7 +158,7 @@ tr_aipw = trme(
   imp_model = T,
   shrink_rate = 1,
   ci_alpha=0.95,
-  method = "AIPW",
+  method = "TR-AIPW",
   bootstrap=T,
   B=500
 )
@@ -177,7 +177,7 @@ data(covid19)
 ##use TR WEE estimator
 tr_wee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
             imp_model=T,shrink_rate = 1,ci_alpha=0.95,
-            method="WEE",bootstrap=T,B=200)
+            method="TR-WEE",bootstrap=T,B=200)
 
 ##estimate of causal effect and CI
 summary(tr_wee)
@@ -185,7 +185,7 @@ summary(tr_wee)
 ##use TR AIPW method
 tr_aipw=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
            imp_model=T,shrink_rate = 1,ci_alpha=0.95,
-           method="AIPW",bootstrap=T,B=200)
+           method="TR-AIPW",bootstrap=T,B=200)
 
 ##use TR AIPW method
 summary(tr_aipw)

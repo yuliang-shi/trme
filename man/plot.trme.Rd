@@ -12,7 +12,7 @@
 \item{...}{additional arguments}
 }
 \value{
-a histogram plots.
+histogram plots for fitted PS values and density plot for bootstrap estimate.
 }
 \description{
 plot() Method for Objects of Class 'trme'

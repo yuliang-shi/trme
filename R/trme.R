@@ -33,9 +33,9 @@
 #'   missing value itself. If the exposure is missing not at random (MNAR), try
 #'   another method instead.
 #'
-#'   \code{method="AIPW"} is for the TR AIPW estimator, which requires "two correct models from three groups (missing/imputation model group, treatment model group, outcome model group)".
+#'   \code{method="TR-AIPW"} is for the TR AIPW estimator, which requires "two correct models from three groups (missing/imputation model group, treatment model group, outcome model group)".
 #'
-#'   \code{method="WEE"} is a weighted estimating equation for TR estimator (recommended), which avoids some effects of extreme weights in the finite samples, but it still keeps the same TR properties as the complex form. For more details, please review the reference paper.
+#'   \code{method="TR-WEE"} is a weighted estimating equation for TR estimator (recommended), which avoids some effects of extreme weights in the finite samples, but it still keeps the same TR properties as the complex form. For more details, please review the reference paper.
 #'
 #'   Both two TR estimators have the same
 #'   asymptotic consistency when the sample size is large. To achieve
@@ -125,7 +125,7 @@
 #'   imp_model = T,
 #'   shrink_rate = 1,
 #'   ci_alpha=0.95,
-#'   method = "WEE",
+#'   method = "TR-WEE",
 #'   bootstrap=T,
 #'   B=500
 #' )
@@ -142,7 +142,7 @@
 #'   imp_model = T,
 #'   shrink_rate = 1,
 #'   ci_alpha=0.95,
-#'   method = "AIPW",
+#'   method = "TR-AIPW",
 #'   bootstrap=T,
 #'   B=500
 #' )
@@ -161,7 +161,7 @@
 #' ##use TR WEE estimator
 #' tr_wee=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
 #'             imp_model=T,shrink_rate = 1,ci_alpha=0.95,
-#'             method="WEE",bootstrap=T,B=200)
+#'             method="TR-WEE",bootstrap=T,B=200)
 #'
 #' ##estimate of causal effect and CI
 #' summary(tr_wee)
@@ -169,7 +169,7 @@
 #' ##use TR AIPW method
 #' tr_aipw=trme(covs = c("age","sex","diabetes"),Y="Y",A="CVD", data=covid19,
 #'            imp_model=T,shrink_rate = 1,ci_alpha=0.95,
-#'            method="AIPW",bootstrap=T,B=200)
+#'            method="TR-AIPW",bootstrap=T,B=200)
 #'
 #' ##use TR AIPW method
 #' summary(tr_aipw)
@@ -182,7 +182,7 @@
 
 
 trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
-              method=c("AIPW","WEE"),bootstrap=T,B=200)
+              method=c("TR-AIPW","TR-WEE"),bootstrap=T,B=200)
 {
 
   ##match the method
@@ -205,8 +205,8 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
   if(length(levels(factor(data$A)))>2)
     stop("not a binary treatment.")
 
-  if((method!="WEE")&(method!="AIPW"))
-    stop("Specify a wrong method.")
+  if((method!="TR-WEE")&(method!="TR-AIPW"))
+    stop("You specify a wrong method.")
 
 
   ##test missing values
@@ -483,7 +483,7 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
     ##reset A=NA as -100
     data$A[is.na(data$A)] = -100
 
-    if(method=="AIPW"){
+    if(method=="TR-AIPW"){
 
 
       ###predicted response for trt and control groups
@@ -525,7 +525,7 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
 
 
     #####TR WEE Method######
-    if(method=="WEE"){
+    if(method=="TR-WEE"){
 
       ##predicted response for trt or control
       exbit_trt_fit=exp(XA_trt_all%*%beta_ee_miss)/(1+exp(XA_trt_all%*%beta_ee_miss))
@@ -701,17 +701,22 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
     ##step3: bootstrap standard error 4x1 vector
     boot_se=sd(boot_vec)
 
-    ###95% CI. paste0 without dropping 0
+    ####way1: bootstrap percentile CI ####
+    ci_low_per=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
+    ci_up_per=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
+    ci_per=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
+
+    ###way2: CI BSE.
     ci_low_bse=round(point_est-qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
     ci_up_bse=round(point_est+qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
     ci_bse=paste0("(",format(ci_low_bse,drop0Trailing = F),",",
                   format(ci_up_bse,drop0Trailing = F),")")
 
-    ##test H0: tau=1 vs Ha: tau \neq 1
+    ##test and pvalue based on BSE
+    ##H0: tau=1 vs Ha: tau \neq 1
     #change to pvalue <0.001 when smaller than 0.001
     z_obs=(point_est-1)/boot_se
     pvalue_bse=2*(1-pnorm(q=abs(z_obs),mean=0,sd=1))
-
 
     if(pvalue_bse<0.01){
 
@@ -721,14 +726,10 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
       pvalue_bse=round(pvalue_bse,3)
     }
 
-    ####bootstrap percentile CI ####
-    ci_low_per=round(quantile(boot_vec,na.rm = T,probs=0.025,type=1),3)
-    ci_up_per=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
-    ci_per=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
 
     ###summary df
     df_sum=data.frame(round(point_est,3),round(boot_se,3),ci_bse,ci_per,pvalue_bse)
-    rownames(df_sum)=paste0("TR ",method,": ",A)
+    rownames(df_sum)=paste0(method,": ",A)
     colnames(df_sum)=c("Estimate","BSE",paste0(100*ci_alpha,"% CI BSE"),
                        paste0(100*ci_alpha,"% CI Per"),"p.value")
   }
@@ -739,13 +740,14 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
     ##if not use bootstrap, only return point est
     df_sum=data.frame("Estimate"=point_est)
     df_sum=round(df_sum,3)
-    rownames(df_sum)=paste0("TR ",method,": ",A)
+    rownames(df_sum)=paste0(method,": ",A)
 
   }
 
   ##return final list
-  final=list("results"=df_sum,"fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,
-             data=data)
+  final=list("results"=df_sum,"method"=method,
+             "fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,
+             "boot_est"=boot_vec,data=data)
 
   structure(final,class="trme")
 }
