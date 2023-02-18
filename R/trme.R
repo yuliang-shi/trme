@@ -730,8 +730,8 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
     ###summary df
     df_sum=data.frame(round(point_est,3),round(boot_se,3),ci_bse,ci_per,pvalue_bse)
     rownames(df_sum)=paste0(method,": ",A)
-    colnames(df_sum)=c("Estimate","BSE",paste0(100*ci_alpha,"% CI BSE"),
-                       paste0(100*ci_alpha,"% CI Per"),"p.value")
+    colnames(df_sum)=c("Estimate","BSE",paste0(100*ci_alpha,"% CI Normal"),
+                       paste0(100*ci_alpha,"% CI Percent"),"p.value")
   }
 
   if(bootstrap==F)
