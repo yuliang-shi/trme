@@ -1,13 +1,15 @@
 ###IPW for missing exposure core function ######
-#' @title IPW Estimation for Missing Exposure
+#' @title Inverse Probability Weighting (IPW) Estimation for Missing Exposure
 #' @author Yuliang Shi
-#' @description Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues via IPW methods. Provide estimated standard errors for inference purposes.
+#' @description Estimate the causal effect of the exposure on the outcome when the exposure is MAR.
+#' Adjust for both missing and confounding issues via IPW estimator via weighted estimating equations (WEE) method.
+#'  Provide estimated standard errors for inference purposes.
 #'
 #'
 #' @param covs \code{\link{character}}  the required vector name of all confounders which
 #'   will affect both exposure and outcome.  Any interaction term or non-linear
 #'   form can be added after creating those variables based on the data.
-#' @param Y \code{\link{character}} the required name of the outcome variable. The trme
+#' @param Y \code{\link{character}} the required name of the outcome variable. The
 #'   function currently only works on the binary outcome.
 #' @param A \code{\link{character}} the required name of binary treatment or exposure
 #'   variable.
@@ -34,34 +36,37 @@
 #'
 #'   \code{method="IPW-IPW"} is for the traditional IPW estimator, which requires **both missingness and treatment models to be correct**.
 #'
-#'   \code{method="IPW-DR"} is a IPW with DR estimator, which requires **missingness model is correct and either treatment or outcome model is correct**.
+#'   \code{method="IPW-DR"} is a IPW with DR estimator, which requires **the missingness model to be correct and either the treatment or outcome model is also correct**.
 #'
-#'   \code{method="IPW-WEE"} is a IPW using WEE estimator (recommended), which keeps **IPW-DR properties and avoids some effects of extreme weights** in the finite samples, but it still keeps the same TR properties as the complex form. For more details, please review the reference paper.
+#'   \code{method="IPW-WEE"} is a IPW using WEE estimator (recommended), which keeps **IPW-DR properties and reduce variance after decreasing joint effects of some extreme weights** in the finite samples.
+#'   For more details, please review the reference paper.
 #'
 #' All IPW estimators utilize Bootstrap approach to estimate standard errors which can protect against
-#'   the misspecification of model based on the simulation studies. By default, parallel computing will be applied to speed up computing process based on the operating system.
+#'   the misspecification of model based on the simulation studies.
+#'   By default, parallel computing will be applied to speed up computing process based on the operating system.
 #'
 #' @return Use \code{summary()} function to print out a data frame including summarized results.
 #' \itemize{
 #' \item{\code{Estimate: }}{estimated causal effect  (odds ratio) of exposure on the outcome. }
-#' \item{\code{95\% CI: }}{95\% two-sided confidence interval.}
+#' \item{\code{95\% CI BSE: }}{95\% two-sided confidence interval using bootstrap standard errors and normal approximation.}
+#' #' \item{\code{95\% CI Per: }}{95\% two-sided confidence interval using bootstrap percentile (recommended).}
 #' \item{\code{p.value: }}{p values for two-sided Wald test. H0: true causal effect (OR) is 1}}
 #'
 #' In addition, other fitted values are also saved in the list.
 #' \itemize{
 #' \item{\code{fit_ps: }}{fitted propensity scores for all subjects, which are used to adjust for the confounding issue.}
 #' \item{\code{miss_weights: }}{fitted inverse weights of missingness used to adjust for the missing issue.}
-#' \item{\code{hist_ps_control, hist_ps_trt: } use \code{plot()} function to draw density plots for fitted propensity score between observed control and treatment groups.}
+#' \item{\code{hist_ps_control, hist_ps_trt: } use \code{plot()} function to draw density plots}
 #' }
 #'
 #' @keywords regression, robust.
 #'
 #' @note For more details, please review \href{https://github.com/yuliang-shi/trme}{Yuliang's Github}.
-#' For citation, please cite the package as **Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.**
+#' For citation, please cite the package as Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Robust Estimator}. Biometrical Journal. Submitted.
 #'
 #' @seealso \code{\link{summary.trme}}, \code{\link{print.trme}} for summarized result; \code{\link{plot.trme}} for histograms of fitted propensity score; \code{\link{covid19}} for description of real data set.
 #'
-#' @references Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (12/2022).
+#' @references Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Robust Estimator}. Biometrical Journal. Submitted.
 #'
 #' Zhang, Z., Liu, W., Zhang, B., Tang, L., and Zhang, J. (2016). \emph{Causal inference with missing exposure information: Methods and applications to an obstetric study}. Statistical Methods in Medical Research 25, 2053–2066.
 #'
@@ -120,7 +125,7 @@
 #'   ci_alpha=0.95,
 #'   method = "IPW-WEE",
 #'   bootstrap=T,
-#'   B=200
+#'   B=500
 #' )
 #'
 #' ##print out results
@@ -139,7 +144,7 @@
 #'   ci_alpha=0.95,
 #'   method = "IPW-DR",
 #'   bootstrap=T,
-#'   B=200
+#'   B=500
 #' )
 #'
 #' ##print out results

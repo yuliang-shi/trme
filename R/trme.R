@@ -1,7 +1,7 @@
 ###triple robust for missing exposure (TRME) core function ######
 #' @title Triple Robust Estimation for Missing Exposure
 #' @author Yuliang Shi
-#' @description Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues via simplified estimating equations with triple robust (TR) properties. Provide estimated standard errors for inference purposes.
+#' @description Estimate the causal effect of the exposure on the outcome when the exposure is MAR. Adjust for both missing and confounding issues using triple robust (TR) estimator via weighted estimating equations. Provide estimated standard errors for inference purposes.
 #'
 #'
 #' @param covs \code{\link{character}}  the required vector name of all confounders which
@@ -39,35 +39,35 @@
 #'
 #'   Both two TR estimators have the same
 #'   asymptotic consistency when the sample size is large. To achieve
-#'   consistency, both TR estimators require at least **two correct models from three groups**
-#'   condition, which means if the missingness model is correct, we require
-#'   either the treatment or outcome model to be correct; If the missingness
-#'   model is wrong, but the imputation model is correct, we require either the treatment or outcome model to be correct. If both imputation and missingness models are wrong, to acheive consistency, both treatment and outcome models should be correct, in order to apply Bayes approach.
+#'   consistency, both TR estimators require at least **two correct groups from three groups of models**
+#'   , which means if either the missingness or imputation model is correct, we require
+#'   either the treatment or outcome model to be correct;  If both imputation and missingness models are wrong, both treatment and outcome models require to be correct to acheive consistency, in order to apply Bayes approach.
 #'
-#' Both TR estimators utilize Bootstrap approach to estimate standard errors which can protect against
+#' Both TR estimators utilize Bootstrap approach to estimate standard errors and CI which can protect against
 #'   the misspecification of model based on the simulation studies. By default, parallel computing will be applied to speed up computing process based on the operating system.
 #'
 #' @return Use \code{summary()} function to print out a data frame including summarized results.
 #' \itemize{
 #' \item{\code{Estimate: }}{estimated causal effect (odds ratio) of exposure on the outcome. }
-#' \item{\code{95\% CI: }}{95\% two-sided confidence interval.}
+#' \item{\code{95\% CI BSE: }}{95\% two-sided confidence interval using bootstrap standard errors and normal approximation.}
+#' #' \item{\code{95\% CI Per: }}{95\% two-sided confidence interval using bootstrap percentile (recommended).}
 #' \item{\code{p.value: }}{p values for two-sided Wald test. H0: true causal effect (OR) is 1}}
 #'
 #' In addition, other fitted values are also saved in the list.
 #' \itemize{
 #' \item{\code{fit_ps: }}{fitted propensity scores for all subjects, which are used to adjust for the confounding issue.}
 #' \item{\code{miss_weights: }}{fitted inverse weights of missingness used to adjust for the missing issue.}
-#' \item{\code{hist_ps_control, hist_ps_trt: } use \code{plot()} function to draw density plots for fitted propensity score between control and treatment groups.}
+#' \item{\code{hist_ps_control, hist_ps_trt: } use \code{plot()} function to draw density plots.}
 #' }
 #'
 #' @keywords regression, robust.
 #'
 #' @note For more details, please review \href{https://github.com/yuliang-shi/trme}{Yuliang's Github}.
-#' For citation, please cite the package as **Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine.**
+#' For citation, please cite the package as Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Robust Estimator}. Biometrical Journal. Submitted.
 #'
 #' @seealso \code{\link{summary.trme}}, \code{\link{print.trme}} for summarized result; \code{\link{plot.trme}} for histograms of fitted propensity score; \code{\link{covid19}} for description of real data set.
 #'
-#' @references Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted (12/2022).
+#' @references Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Robust Estimator}. Statistics in Medicine. Biometrical Journal. Submitted.
 #'
 #' Zhang, Z., Liu, W., Zhang, B., Tang, L., and Zhang, J. (2016). \emph{Causal inference with missing exposure information: Methods and applications to an obstetric study}. Statistical Methods in Medical Research 25, 2053–2066.
 #'
@@ -133,7 +133,10 @@
 #' ##print out results and plots
 #' summary(tr_wee)
 #'
-#' ##use AIPW method
+#' ##draw plots
+#' ##plot(tr_wee)
+#'
+#' ##apply AIPW method
 #' tr_aipw = trme(
 #'   covs = c("x1", "x2", "x3"),
 #'   Y = "Y",
@@ -150,7 +153,7 @@
 #' ##print out results
 #' summary(tr_aipw)
 #'
-#' ##draw PS histogram plots
+#' ##draw plots
 #' ##plot(tr_aipw)
 #'
 #'

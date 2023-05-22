@@ -25,7 +25,7 @@
 #'
 #' @source View the original raw data in \href{https://integrasus.saude.ce.gov.br/}{IntegraSUS website}
 #'
-#' @references For more details, please review and cite the reference paper: Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Triple Robust Estimator}. Statistics in Medicine. Submitted.
+#' @references For more details, please review and cite the reference paper: Yuliang Shi, Yeying Zhu, Joel Dubin. \emph{Causal Inference on Missing Exposure via Robust Estimator}. Biometrical Journal. Submitted.
 #'
 #' @examples
 #' ##attach the data
