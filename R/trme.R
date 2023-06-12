@@ -224,7 +224,6 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
 
 
   #####trme core function starts####
-
   trme_core=function(covs=covs,Y=Y,A=A,data=data,imp_model=imp_model,
                      shrink_rate=shrink_rate,ci_alpha=ci_alpha,method=method)
   {
