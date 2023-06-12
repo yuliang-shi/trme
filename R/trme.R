@@ -188,7 +188,7 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
               method=c("TR-AIPW","TR-WEE"),bootstrap=T,B=200)
 {
 
-  ##match the method
+  ##match the method TR AIPW or TR WEE
   method=match.arg(method)
 
 
