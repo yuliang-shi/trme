@@ -274,6 +274,10 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
 
 
     #####step2: fit beta IPW #####
+    ##fit glm model
+    or_glm=glm(as.formula(paste("Y~",paste(covs,collapse = "+"))),family=binomial(link="logit"),data=data)
+    beta_glm=coefficients(or_glm)
+
     ##miss model must be correct, so beta ee becomes beta IPW
     ##fit separate or models on trt group
     or_trt_design=svydesign(ids=~1, weights=~weight_miss, data=subset(data_naomit,A==1))
@@ -357,7 +361,20 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
       }
 
       #beta
-      beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_trt_ipw))
+      beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_glm))
+
+      if((beta_wee1_sol$estim.precis>1)|(is.na(beta_wee1_sol$estim.precis)==T)){
+
+        ##try different initial value from glm on all data
+        beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_trt_ipw))
+
+
+      }
+
+
+      ##convergence
+      beta_ipw_wee1=beta_wee1_sol$root
+      beta_ipw_wee1_converge=beta_wee1_sol$estim.precis
 
 
       ##for control group
@@ -385,29 +402,34 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
       }
 
       #beta
-      beta_wee0_sol=multiroot(f = score_beta_wee0, start =beta_con_ipw)
+      beta_wee0_sol=multiroot(f = score_beta_wee0, start =beta_glm)
 
-      ##estimated beta WEE
-      beta_ipw_wee1=beta_wee1_sol$root
-      beta_ipw_wee1_converge=beta_wee1_sol$estim.precis
+      if((beta_wee0_sol$estim.precis>1)|(is.na(beta_wee0_sol$estim.precis)==T)){
 
+        ##try different initial value
+        beta_wee0_sol=multiroot(f = score_beta_wee0, start =c(beta_con_ipw))
+
+        print("Try different intial values to solve the warning issue about the sigular matrix")
+      }
+
+      ##convergence
       beta_ipw_wee0=beta_wee0_sol$root
       beta_ipw_wee0_converge=beta_wee0_sol$estim.precis
 
-
-      ##first step: estimate fitted response from beta WEE
-      link_wee1=exp(X_all%*%beta_ipw_wee1)/(1+exp(X_all%*%beta_ipw_wee1))
-      link_wee0=exp(X_all%*%beta_ipw_wee0)/(1+exp(X_all%*%beta_ipw_wee0))
 
       #####final IPW DR WEE estimate####
       if((is.na(beta_ipw_wee1_converge)==T)|(is.na(beta_ipw_wee0_converge)==T))
       {
         ##if estimate tau is too large, remove TR WEE
-        tau_ipw_wee=NA
+        ipw_est=NA
 
         warning("Algorithm is not converaged. Enlarge sample size or specify correct models.")
 
       }else{
+
+        ##first step: estimate fitted response from beta WEE
+        link_wee1=exp(X_all%*%beta_ipw_wee1)/(1+exp(X_all%*%beta_ipw_wee1))
+        link_wee0=exp(X_all%*%beta_ipw_wee0)/(1+exp(X_all%*%beta_ipw_wee0))
 
         ##estimate IPW WEE only when beta_ipw_wee is converged
         tau1_ipw_wee=mean((1-data$r)*data$weight_miss*link_wee1)
@@ -423,7 +445,9 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
 
 
     ##point est
-    out=list("Estimate"=ipw_est, "fit_ps"=as.vector(fit_ps_ipw),"miss_weights"=data$weight_miss,data=data)
+    out=list("Estimate"=ipw_est, "fit_ps"=as.vector(fit_ps_ipw),
+             "miss_weights"=data$weight_miss,data=data)
+
     return(out)
 
   }
@@ -525,6 +549,11 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
     rownames(df_sum)=paste0(method,": ",A)
     colnames(df_sum)=c("Estimate","BSE",paste0(100*ci_alpha,"% CI Normal"),
                        paste0(100*ci_alpha,"% CI Percent"),"p.value")
+
+    ##final output
+    final=list("results"=df_sum,"method"=method,
+               "fit_ps"=ipw_est$fit_ps,"miss_weights"=ipw_est$miss_weights,
+               "boot_est"=boot_vec,data=data)
   }
 
   if(bootstrap==F)
@@ -535,12 +564,13 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
     df_sum=round(df_sum,3)
     rownames(df_sum)=paste0(method,": ",A)
 
+    ##final output
+    final=list("results"=df_sum,"method"=method,
+               "fit_ps"=ipw_est$fit_ps,"miss_weights"=ipw_est$miss_weights,
+               data=data)
   }
 
-  final=list("results"=df_sum,"method"=method,
-             "fit_ps"=ipw_est$fit_ps,"miss_weights"=ipw_est$miss_weights,
-             "boot_est"=boot_vec,data=data)
-
+  ##structure as trme class
   structure(final,class="trme")
 
 }
