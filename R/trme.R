@@ -645,7 +645,6 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
 
   ###########Bootstrap Function ##############
 
-
   if(bootstrap==T){
 
     ##variance
@@ -708,13 +707,13 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
     ci_up_per=round(quantile(boot_vec,na.rm = T,probs=0.975,type=1),3)
     ci_per=paste0("(",format(ci_low_per,drop0Trailing = F),",",format(ci_up_per,drop0Trailing = F),")")
 
+
     ###way2: CI BSE.
     ci_low_bse=round(point_est-qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
     ci_up_bse=round(point_est+qnorm(0.5+0.5*ci_alpha,0,1)*boot_se,3)
-    ci_bse=paste0("(",format(ci_low_bse,drop0Trailing = F),",",
-                  format(ci_up_bse,drop0Trailing = F),")")
+    ci_bse=paste0("(",format(ci_low_bse,drop0Trailing = F),",",format(ci_up_bse,drop0Trailing = F),")")
 
-    ##test and pvalue based on BSE
+    ##test and pvalue using BSE
     ##H0: tau=1 vs Ha: tau \neq 1
     #change to pvalue <0.001 when smaller than 0.001
     z_obs=(point_est-1)/boot_se
@@ -728,12 +727,16 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
       pvalue_bse=round(pvalue_bse,3)
     }
 
-
     ###summary df
     df_sum=data.frame(round(point_est,3),round(boot_se,3),ci_bse,ci_per,pvalue_bse)
     rownames(df_sum)=paste0(method,": ",A)
     colnames(df_sum)=c("Estimate","BSE",paste0(100*ci_alpha,"% CI Normal"),
                        paste0(100*ci_alpha,"% CI Percent"),"p.value")
+
+    ##final output
+    final=list("results"=df_sum,"method"=method,
+               "fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,
+               "boot_est"=boot_vec,data=data)
   }
 
   if(bootstrap==F)
@@ -744,14 +747,15 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
     df_sum=round(df_sum,3)
     rownames(df_sum)=paste0(method,": ",A)
 
+    ##final output
+    final=list("results"=df_sum,"method"=method,
+               "fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,
+               data=data)
   }
 
-  ##return final list
-  final=list("results"=df_sum,"method"=method,
-             "fit_ps"=tr_est$fit_ps,"miss_weights"=tr_est$miss_weights,
-             "boot_est"=boot_vec,data=data)
-
+  ##structure as trme class
   structure(final,class="trme")
+
 }
 
 
