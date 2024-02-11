@@ -90,8 +90,8 @@ For citation, please cite the package as Yuliang Shi, Yeying Zhu, Joel Dubin. \e
 \examples{
 ########The first example for simulated data##########
 require("trme")
-set.seed(2021)
-n = 1500 #sample size
+set.seed(2022)
+n = 1000 #sample size
 
 #####generate some continuous covariates
 id = seq(1, n, by = 1)
@@ -139,7 +139,7 @@ ipw_wee = ipwe(
   ci_alpha=0.95,
   method = "IPW-WEE",
   bootstrap=T,
-  B=500
+  B=200
 )
 
 ##print out results
@@ -158,12 +158,27 @@ ipw_dr = ipwe(
   ci_alpha=0.95,
   method = "IPW-DR",
   bootstrap=T,
-  B=500
+  B=200
 )
 
 ##print out results
 summary(ipw_dr)
 
+
+##IPW IPW method
+ipw_ipw = ipwe(
+  covs = c("x1", "x2", "x3"),
+  Y = "Y",
+  A = "A",
+  data = data,
+  shrink_rate = 1,
+  ci_alpha=0.95,
+  method = "IPW-IPW",
+  bootstrap=T,
+  B=200
+)
+##print out results
+summary(ipw_ipw)
 
 ########The second example for real data##########
 require("trme")

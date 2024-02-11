@@ -76,8 +76,8 @@
 #' @examples
 #' ########The first example for simulated data##########
 #' require("trme")
-#' set.seed(2021)
-#' n = 1500 #sample size
+#' set.seed(2022)
+#' n = 1000 #sample size
 #'
 #' #####generate some continuous covariates
 #' id = seq(1, n, by = 1)
@@ -125,7 +125,7 @@
 #'   ci_alpha=0.95,
 #'   method = "IPW-WEE",
 #'   bootstrap=T,
-#'   B=500
+#'   B=200
 #' )
 #'
 #' ##print out results
@@ -144,12 +144,28 @@
 #'   ci_alpha=0.95,
 #'   method = "IPW-DR",
 #'   bootstrap=T,
-#'   B=500
+#'   B=200
 #' )
 #'
 #' ##print out results
 #' summary(ipw_dr)
 #'
+#'
+#' ##IPW IPW method
+#' ipw_ipw = ipwe(
+#'   covs = c("x1", "x2", "x3"),
+#'   Y = "Y",
+#'   A = "A",
+#'   data = data,
+#'   shrink_rate = 1,
+#'   ci_alpha=0.95,
+#'   method = "IPW-IPW",
+#'   bootstrap=T,
+#'   B=200
+#' )
+#
+#' ##print out results
+#' summary(ipw_ipw)
 #'
 #' ########The second example for real data##########
 #' require("trme")
@@ -269,9 +285,11 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
     ##alpha ipw
     alpha_ipw=coefficients(alpha_ipwglm)
 
-    ##fitted values
+    ##fitted PS values
     fit_ps_ipw=as.vector(predict(alpha_ipwglm,newdata =data,type = "response"))
 
+    data_naomit$inv_ipw=1/fit_ps_ipw[data$r==0]
+    data_naomit$inv_ipw_con=1/(1-fit_ps_ipw)[data$r==0]
 
     #####step2: fit beta IPW #####
     ##fit glm model
@@ -334,109 +352,139 @@ ipwe=function(covs,Y,A,data,shrink_rate=1,ci_alpha=0.95,
     ##set diff of F all-Fobs
     F_diff=rep(0,ncol(X_all))
 
+
+    ###IPW-WEE####
     if(method=="IPW-WEE"){
 
-      ##for trt group
-      score_beta_wee1=function(beta)
-      {
-        ##unknown beta
-        link=X_all%*%beta
-        exbit_beta=exp(link)/(1+exp(link))
+      ##New IPW WEE####
+      ##for trt
+      ipw_tr_trt_design=svydesign(ids=~1, weights=~weight_miss*inv_ipw,
+                                  data=subset(data_naomit,A==1))
 
-        #five beta_ee_miss score functions
-        score_ij=function(x_all)
-        {
-          F_all=sum((1-data$r)*data$weight_miss*data$A/fit_ps_ipw*x_all*(data$Y-exbit_beta))
+      ##for control
+      ipw_tr_con_design=svydesign(ids=~1, weights=~weight_miss*inv_ipw_con,
+                                  data=subset(data_naomit,A==0))
 
-          return(F_all)
-        }
+      ##estimate beta wee
+      beta_trt_wee=svyglm(as.formula(paste("Y~",paste(covs,collapse = "+"))),
+                          design=ipw_tr_trt_design,family=quasibinomial(link="logit"))
 
-        for (j in 1:ncol(X_all)) {
+      beta_con_wee=svyglm(as.formula(paste("Y~",paste(covs,collapse = "+"))),
+                          design=ipw_tr_con_design,family=quasibinomial(link="logit"))
 
-          F_diff[j]=score_ij(x_all=X_all[,j])
-        }
+      ##predict for observed subjects
+      ##then times weights of missingness to get tau1, tau0
+      tau_ipw_newwee1=mean((1-data$r)*data$weight_miss*
+                             predict(beta_trt_wee,newdata = data,type="response"))
 
-        ##combine results with baseline, expousure, and covariates
-        return(F_diff)
-      }
+      tau_ipw_newwee0=mean((1-data$r)*data$weight_miss*
+                             predict(beta_con_wee,newdata = data,type="response"))
 
-      #beta
-      beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_glm))
-
-      if((beta_wee1_sol$estim.precis>1)|(is.na(beta_wee1_sol$estim.precis)==T)){
-
-        ##try different initial value from glm on all data
-        beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_trt_ipw))
+      ipw_est=(tau_ipw_newwee1/(1-tau_ipw_newwee1))/(tau_ipw_newwee0/(1-tau_ipw_newwee0))
+      ipw_est
 
 
-      }
-
-
-      ##convergence
-      beta_ipw_wee1=beta_wee1_sol$root
-      beta_ipw_wee1_converge=beta_wee1_sol$estim.precis
-
-
-      ##for control group
-      score_beta_wee0=function(beta)
-      {
-        ##unknown beta
-        link=X_all%*%beta
-        exbit_beta=exp(link)/(1+exp(link))
-
-        #five beta_ee_miss score functions
-        score_ij=function(x_all)
-        {
-          F_all=sum((1-data$r)*data$weight_miss*(1-data$A)/(1-fit_ps_ipw)*x_all*(data$Y-exbit_beta))
-
-          return(F_all)
-        }
-
-        for (j in 1:ncol(X_all)) {
-
-          F_diff[j]=score_ij(x_all=X_all[,j])
-        }
-
-        ##combine results with baseline, expousure, and covariates
-        return(F_diff)
-      }
-
-      #beta
-      beta_wee0_sol=multiroot(f = score_beta_wee0, start =beta_glm)
-
-      if((beta_wee0_sol$estim.precis>1)|(is.na(beta_wee0_sol$estim.precis)==T)){
-
-        ##try different initial value
-        beta_wee0_sol=multiroot(f = score_beta_wee0, start =c(beta_con_ipw))
-
-        print("Try different intial values to solve the warning issue about the sigular matrix")
-      }
-
-      ##convergence
-      beta_ipw_wee0=beta_wee0_sol$root
-      beta_ipw_wee0_converge=beta_wee0_sol$estim.precis
-
-
-      #####final IPW DR WEE estimate####
-      if((is.na(beta_ipw_wee1_converge)==T)|(is.na(beta_ipw_wee0_converge)==T))
-      {
-        ##if estimate tau is too large, remove TR WEE
-        ipw_est=NA
-
-        warning("Algorithm is not converaged. Enlarge sample size or specify correct models.")
-
-      }else{
-
-        ##first step: estimate fitted response from beta WEE
-        link_wee1=exp(X_all%*%beta_ipw_wee1)/(1+exp(X_all%*%beta_ipw_wee1))
-        link_wee0=exp(X_all%*%beta_ipw_wee0)/(1+exp(X_all%*%beta_ipw_wee0))
-
-        ##estimate IPW WEE only when beta_ipw_wee is converged
-        tau1_ipw_wee=mean((1-data$r)*data$weight_miss*link_wee1)
-        tau0_ipw_wee=mean((1-data$r)*data$weight_miss*link_wee0)
-
-        ipw_est=(tau1_ipw_wee/(1-tau1_ipw_wee))/(tau0_ipw_wee/(1-tau0_ipw_wee))
-      }
+      ###old IPW WEE full equation####
+      # ##for trt group
+      # score_beta_wee1=function(beta)
+      # {
+      #   ##unknown beta
+      #   link=X_all%*%beta
+      #   exbit_beta=exp(link)/(1+exp(link))
+      #
+      #   #five beta_ee_miss score functions
+      #   score_ij=function(x_all)
+      #   {
+      #     F_all=sum((1-data$r)*data$weight_miss*data$A/fit_ps_ipw*x_all*(data$Y-exbit_beta))
+      #
+      #     return(F_all)
+      #   }
+      #
+      #   for (j in 1:ncol(X_all)) {
+      #
+      #     F_diff[j]=score_ij(x_all=X_all[,j])
+      #   }
+      #
+      #   ##combine results with baseline, expousure, and covariates
+      #   return(F_diff)
+      # }
+      #
+      # #beta
+      # beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_glm))
+      #
+      # if((beta_wee1_sol$estim.precis>1)|(is.na(beta_wee1_sol$estim.precis)==T)){
+      #
+      #   ##try different initial value from glm on all data
+      #   beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_trt_ipw))
+      #
+      # }
+      #
+      #
+      # ##convergence
+      # beta_ipw_wee1=beta_wee1_sol$root
+      # beta_ipw_wee1_converge=beta_wee1_sol$estim.precis
+      #
+      #
+      # ##for control group
+      # score_beta_wee0=function(beta)
+      # {
+      #   ##unknown beta
+      #   link=X_all%*%beta
+      #   exbit_beta=exp(link)/(1+exp(link))
+      #
+      #   #five beta_ee_miss score functions
+      #   score_ij=function(x_all)
+      #   {
+      #     F_all=sum((1-data$r)*data$weight_miss*(1-data$A)/(1-fit_ps_ipw)*x_all*(data$Y-exbit_beta))
+      #
+      #     return(F_all)
+      #   }
+      #
+      #   for (j in 1:ncol(X_all)) {
+      #
+      #     F_diff[j]=score_ij(x_all=X_all[,j])
+      #   }
+      #
+      #   ##combine results with baseline, expousure, and covariates
+      #   return(F_diff)
+      # }
+      #
+      # #beta
+      # beta_wee0_sol=multiroot(f = score_beta_wee0, start =beta_glm)
+      #
+      # if((beta_wee0_sol$estim.precis>1)|(is.na(beta_wee0_sol$estim.precis)==T)){
+      #
+      #   ##try different initial value
+      #   beta_wee0_sol=multiroot(f = score_beta_wee0, start =c(beta_con_ipw))
+      #
+      #   print("Try different intial values to solve the warning issue about the sigular matrix")
+      # }
+      #
+      # ##convergence
+      # beta_ipw_wee0=beta_wee0_sol$root
+      # beta_ipw_wee0_converge=beta_wee0_sol$estim.precis
+      #
+      #
+      # #####final IPW DR WEE estimate####
+      # if((is.na(beta_ipw_wee1_converge)==T)|(is.na(beta_ipw_wee0_converge)==T))
+      # {
+      #   ##if estimate tau is too large, remove TR WEE
+      #   ipw_est=NA
+      #
+      #   warning("Algorithm is not converaged. Enlarge sample size or specify correct models.")
+      #
+      # }else{
+      #
+      #   ##first step: estimate fitted response from beta WEE
+      #   link_wee1=exp(X_all%*%beta_ipw_wee1)/(1+exp(X_all%*%beta_ipw_wee1))
+      #   link_wee0=exp(X_all%*%beta_ipw_wee0)/(1+exp(X_all%*%beta_ipw_wee0))
+      #
+      #   ##estimate IPW WEE only when beta_ipw_wee is converged
+      #   tau1_ipw_wee=mean((1-data$r)*data$weight_miss*link_wee1)
+      #   tau0_ipw_wee=mean((1-data$r)*data$weight_miss*link_wee0)
+      #
+      #   ipw_est=(tau1_ipw_wee/(1-tau1_ipw_wee))/(tau0_ipw_wee/(1-tau0_ipw_wee))
+      # }
 
     }
 
