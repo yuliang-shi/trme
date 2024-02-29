@@ -185,7 +185,7 @@
 
 
 trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
-              method=c("TR-AIPW","TR-WEE"),bootstrap=T,B=200)
+              method=c("TR-AIPW","TR-WEE"),bootstrap=T,B=500)
 {
 
   ##match the method TR AIPW or TR WEE
@@ -530,6 +530,7 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
     if(method=="TR-WEE"){
 
       ##predicted response for trt or control
+
       exbit_trt_fit=exp(XA_trt_all%*%beta_ee_miss)/(1+exp(XA_trt_all%*%beta_ee_miss))
       exbit_con_fit=exp(XA_con_all%*%beta_ee_miss)/(1+exp(XA_con_all%*%beta_ee_miss))
 
@@ -543,9 +544,14 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
         #five beta_ee_miss score functions
         beta_wee1=function(x_all)
         {
+          ##trt group difference term
           F_trt=data$A*(data$Y-exbit_beta)-data$pred_ps_xy*(data$Y-exbit_trt_fit)
 
-          F_all=sum((1-data$r)*data$weight_miss*inv_ps_dr_all*x_all*F_trt)
+          ##dr term
+          F_dr=data$pred_ps_xy*inv_ps_dr_all*(data$Y-exbit_trt_fit)
+
+          ##final equation for all subjects
+          F_all=sum(x_all*((1-data$r)*data$weight_miss*inv_ps_dr_all*F_trt+F_dr))
 
           return(F_all)
         }
@@ -562,22 +568,26 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
       }
 
       #beta
-      beta_wee1_sol=multiroot(f = score_beta_wee1, start =c(beta_ee_miss[1]+beta_ee_miss[2],beta_ee_miss[-c(1,2)]))
+      beta_wee1_sol=multiroot(f = score_beta_wee1,
+                              start =c(beta_ee_miss[1]+beta_ee_miss[2],beta_ee_miss[c(-1,-2)]))
 
 
       ###score function for beta wee0
-      # beta=beta_ee_miss[-2]
-      # x_all=X_all[,1]
-
       score_beta_wee0=function(beta){
 
-        exbit_beta=exp(X_all%*%beta)/(1+exp(X_all%*%beta))
+        link_beta=X_all%*%beta
+        exbit_beta=exp(link_beta)/(1+exp(link_beta))
 
         beta_wee0=function(x_all){
 
+          ##control group difference term
           F_con=(1-data$A)*(data$Y-exbit_beta)-(1-data$pred_ps_xy)*(data$Y-exbit_con_fit)
 
-          F_all=sum((1-data$r)*data$weight_miss*inv_ps_dr_all_con*x_all*F_con)
+          ##dr term
+          F_dr=(1-data$pred_ps_xy)*inv_ps_dr_all_con*(data$Y-exbit_con_fit)
+
+          ##final equation for all subjects
+          F_all=sum(x_all*((1-data$r)*data$weight_miss*inv_ps_dr_all_con*F_con+F_dr))
 
           return(F_all)
         }
@@ -591,29 +601,22 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
       }
 
       #beta
-      beta_wee0_sol=multiroot(f = score_beta_wee0, start =beta_ee_miss[-2])
+      beta_wee0_sol=multiroot(f = score_beta_wee0,
+                              start =c(beta_ee_miss[1],beta_ee_miss[c(-1,-2)]))
 
       ##estimated beta WEE
-      tr_est_wee1=beta_wee1_sol$root
-      tr_est_wee1_converge=beta_wee1_sol$estim.precis
+      beta_tr_wee1=beta_wee1_sol$root
+      beta_tr_wee1_converge=beta_wee1_sol$estim.precis
 
-      tr_est_wee0=beta_wee0_sol$root
-      tr_est_wee0_converge=beta_wee0_sol$estim.precis
+      beta_tr_wee0=beta_wee0_sol$root
+      beta_tr_wee0_converge=beta_wee0_sol$estim.precis
 
       ##pred response use WEE
-      link_wee1=exp(X_all%*%tr_est_wee1)/(1+exp(X_all%*%tr_est_wee1))
-      link_wee0=exp(X_all%*%tr_est_wee0)/(1+exp(X_all%*%tr_est_wee0))
-
-      ##beta WEE estimate1
-      tr_tau_wee1=mean((1-data$r)*data$weight_miss*(link_wee1-exbit_trt_fit))+
-        mean(data$pred_ps_xy*data$Y*inv_ps_dr_all-(data$pred_ps_xy-fit_ps_dr_all)*inv_ps_dr_all*exbit_trt_fit)
-
-      tr_tau_wee0=mean((1-data$r)*data$weight_miss*(link_wee0-exbit_con_fit))+
-        mean((1-data$pred_ps_xy)*data$Y*inv_ps_dr_all_con-(fit_ps_dr_all-data$pred_ps_xy)*inv_ps_dr_all_con*exbit_con_fit)
-
+      link_wee1=exp(X_all%*%beta_tr_wee1)/(1+exp(X_all%*%beta_tr_wee1))
+      link_wee0=exp(X_all%*%beta_tr_wee0)/(1+exp(X_all%*%beta_tr_wee0))
 
       #####final TR WEE estimate####
-      if((is.na(tr_est_wee1_converge)==T)|(is.na(tr_est_wee0_converge)==T))
+      if((is.na(beta_tr_wee1_converge)==T)|(is.na(beta_tr_wee0_converge)==T))
       {
         ##if estimate tau is too large, remove TR WEE
         tr_est=NA
@@ -623,6 +626,10 @@ trme=function(covs,Y,A,data,imp_model=T,shrink_rate=1,ci_alpha=0.95,
 
         ##estimate TR WEE only when alpha ee, beta ee, beta wee are converged
         ##and tr_tau_wee1,0 are not larger than 1
+        tr_tau_wee1=mean((1-data$r)*data$weight_miss*(link_wee1-exbit_trt_fit)+exbit_trt_fit)
+
+        tr_tau_wee0=mean((1-data$r)*data$weight_miss*(link_wee0-exbit_con_fit)+exbit_con_fit)
+
         tr_est=(tr_tau_wee1/(1-tr_tau_wee1))/(tr_tau_wee0/(1-tr_tau_wee0))
       }
 

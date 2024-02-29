@@ -4,7 +4,7 @@
 \alias{plot.trme}
 \title{plot() Method for Objects of Class 'trme'}
 \usage{
-\method{plot}{trme}(object, ...)
+\method{plot}{trme}(object, type = "hist", ...)
 }
 \arguments{
 \item{object}{Objects of Class 'trme'}

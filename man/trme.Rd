@@ -14,7 +14,7 @@ trme(
   ci_alpha = 0.95,
   method = c("TR-AIPW", "TR-WEE"),
   bootstrap = T,
-  B = 200
+  B = 500
 )
 }
 \arguments{
